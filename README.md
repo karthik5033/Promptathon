@@ -17,6 +17,4 @@ Good luck, have fun, and let your creativity run wild!
 
 ## Support
 
-If you have any problems or need help, contact:
-- Arya Wadhwa: [aryawadhwa.ai24@rvce.edu.in](mailto:aryawadhwa.ai24@rvce.edu.in)
-- Dilraj Singh: [dilrajsingh.ai24@rvce.edu.in](mailto:dilrajsingh.ai24@rvce.edu.in)
+If you have any problems or need help, contact the admins in the whatsapp group.
