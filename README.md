@@ -20,8 +20,6 @@ Your final submission will be evaluated based on the following metrics:
   
 Good luck, have fun, and let your creativity run wild!
 
-Please
-
 ## Support
 
 If you have any problems or need help, contact the admins in the whatsapp group.
