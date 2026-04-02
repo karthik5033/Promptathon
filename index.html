@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Prompt-a-thon Base Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #1e272e;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden; 
+            touch-action: none; 
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const CONFIG = {
+            gravity: 0.6,
+            groundHeight: 0,
+            baseSpeed: 5,
+            jumpForce: -11,
+            playerSpeed: 5,
+            playerLimitX: 0
+        };
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            CONFIG.groundHeight = canvas.height * 0.22;
+            CONFIG.playerLimitX = canvas.width / 2;
+            
+            if (typeof player !== 'undefined' && player.isGrounded) {
+                player.y = canvas.height - CONFIG.groundHeight - player.height;
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        let state = {
+            frames: 0,
+            currentSpeed: CONFIG.baseSpeed
+        };
+
+        const keys = {
+            Space: false,
+            ArrowUp: false,
+            ArrowLeft: false,
+            ArrowRight: false
+        };
+
+        class Particle {
+            constructor(x, y, vx, vy, size, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.size = Math.max(1, size);
+                this.color = color;
+                this.alpha = 1;
+                this.markedForDeletion = false;
+            }
+            update() {
+                this.x += this.vx - state.currentSpeed; 
+                this.y += this.vy;
+                this.alpha -= 0.04;
+                this.size *= 0.95;
+                if (this.alpha <= 0 || this.size < 0.2) this.markedForDeletion = true;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class Player {
+            constructor() {
+                this.width = 30;
+                this.height = 40;
+                this.x = Math.min(100, canvas.width * 0.1);
+                this.y = canvas.height - CONFIG.groundHeight - this.height;
+                this.vy = 0; 
+                this.isGrounded = true;
+            }
+
+            update() {
+                this.vy += CONFIG.gravity;
+                this.y += this.vy;
+
+                const groundY = canvas.height - CONFIG.groundHeight;
+                if (this.y + this.height >= groundY) {
+                    if (!this.isGrounded) {
+                        for(let i=0; i<8; i++) {
+                            particles.push(new Particle(
+                                this.x + this.width/2 + (Math.random()*20-10),
+                                groundY,
+                                (Math.random()-0.5)*3,
+                                -Math.random()*2 - 1,
+                                Math.random()*3 + 3,
+                                'rgba(236, 240, 241, 0.7)'
+                            ));
+                        }
+                    }
+                    this.y = groundY - this.height;
+                    this.vy = 0;
+                    this.isGrounded = true;
+                } else {
+                    this.isGrounded = false;
+                }
+
+                if ((keys.Space || keys.ArrowUp) && this.isGrounded) {
+                    this.vy = CONFIG.jumpForce;
+                    this.isGrounded = false;
+                    
+                    for(let i=0; i<6; i++) {
+                        particles.push(new Particle(
+                            this.x + this.width/2 + (Math.random()*16-8),
+                            groundY,
+                            -Math.random()*2 - 1,
+                            -Math.random()*2,
+                            Math.random()*3 + 2,
+                            'rgba(236, 240, 241, 0.6)'
+                        ));
+                    }
+                }
+
+                if (this.isGrounded && state.frames % 8 === 0) {
+                    particles.push(new Particle(
+                        this.x + 10,
+                        groundY,
+                        -1 - Math.random()*2,
+                        -Math.random() - 0.5,
+                        Math.random()*3 + 2,
+                        'rgba(236, 240, 241, 0.5)'
+                    ));
+                }
+
+                if (keys.ArrowLeft) {
+                    this.x -= CONFIG.playerSpeed;
+                }
+                if (keys.ArrowRight) {
+                    this.x += CONFIG.playerSpeed;
+                }
+
+                if (this.x < 0) this.x = 0;
+                if (this.x + this.width > CONFIG.playerLimitX) {
+                    this.x = CONFIG.playerLimitX - this.width;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                let bounceY = this.isGrounded ? Math.abs(Math.sin(state.frames * 0.2)) * 2 : 0;
+                ctx.translate(0, -bounceY);
+
+                const u = this.width / 12; 
+                const v = this.height / 16;
+                
+                const R = '#e52521'; 
+                const BL = '#0043bb'; 
+                const P = '#ffcca6'; 
+                const BR = '#5c3a21'; 
+                const Y = '#fdf104'; 
+
+                // Hat
+                ctx.fillStyle = R;
+                ctx.fillRect(3*u, 0*v, 5*u, 2*v);
+                ctx.fillRect(2*u, 2*v, 9*u, 1*v); 
+                
+                // Head (Hair, Face, Features)
+                ctx.fillStyle = BR;
+                ctx.fillRect(2*u, 3*v, 3*u, 3*v); 
+                ctx.fillRect(1*u, 4*v, 1*u, 3*v); 
+                
+                ctx.fillStyle = P;
+                ctx.fillRect(5*u, 3*v, 4*u, 4*v); 
+                ctx.fillRect(9*u, 4*v, 2*u, 2*v); 
+                ctx.fillRect(3*u, 6*v, 6*u, 1*v); 
+                
+                ctx.fillStyle = BR;
+                ctx.fillRect(7*u, 3*v, 1*u, 2*v); 
+                ctx.fillRect(7*u, 5*v, 4*u, 1*v); 
+                
+                // Body (Shirt & Overalls)
+                ctx.fillStyle = R;
+                ctx.fillRect(2*u, 7*v, 3*u, 4*v); 
+                ctx.fillRect(7*u, 7*v, 3*u, 4*v); 
+                ctx.fillRect(4*u, 7*v, 4*u, 2*v); 
+
+                ctx.fillStyle = BL;
+                ctx.fillRect(4*u, 9*v, 4*u, 4*v); 
+                ctx.fillRect(3*u, 8*v, 1*u, 3*v); 
+                ctx.fillRect(8*u, 8*v, 1*u, 3*v); 
+
+                ctx.fillStyle = Y;
+                ctx.fillRect(3*u, 10*v, 1*u, 1*v); 
+                ctx.fillRect(8*u, 10*v, 1*u, 1*v); 
+
+                // Hands
+                ctx.fillStyle = P;
+                ctx.fillRect(1*u, 9*v, 2*u, 2*v); 
+                ctx.fillRect(9*u, 9*v, 2*u, 2*v); 
+
+                // Legs/Shoes & Animation
+                ctx.fillStyle = BR;
+                let stride = this.isGrounded ? Math.sin(state.frames * 0.2) * 2 : 2;
+                
+                ctx.fillRect((3 - stride)*u, 13*v, 3*u, 2*v); 
+                ctx.fillRect((6 + stride)*u, 13*v, 3*u, 2*v); 
+                
+                ctx.restore();
+            }
+        }
+
+        class Cloud {
+            constructor() {
+                this.width = 100 + Math.random() * 60;
+                this.height = 40 + Math.random() * 20;
+                this.x = canvas.width + Math.random() * 100;
+                this.y = Math.random() * (canvas.height / 2 - this.height);
+                this.speed = (Math.random() * 0.5 + 0.1) * (state.currentSpeed * 0.2);
+                this.markedForDeletion = false;
+            }
+
+            update() {
+                this.x -= this.speed;
+                if (this.x + this.width < 0) {
+                    this.markedForDeletion = true;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.fillStyle = '#ffffff';
+                ctx.globalAlpha = 0.85; 
+                
+                ctx.beginPath();
+                ctx.arc(this.width * 0.2, this.height * 0.7, this.height * 0.3, Math.PI * 0.5, Math.PI * 1.5);
+                ctx.arc(this.width * 0.45, this.height * 0.4, this.height * 0.4, Math.PI, Math.PI * 2);
+                ctx.arc(this.width * 0.75, this.height * 0.5, this.height * 0.3, Math.PI, Math.PI * 2);
+                ctx.arc(this.width * 0.85, this.height * 0.75, this.height * 0.25, Math.PI * 1.5, Math.PI * 0.5);
+                ctx.closePath(); 
+                ctx.fill();
+                
+                ctx.restore();
+            }
+        }
+
+        let player;
+        let clouds = [];
+        let particles = [];
+
+        function initGame() {
+            player = new Player();
+            clouds = [];
+            particles = [];
+            state = {
+                frames: 0,
+                currentSpeed: CONFIG.baseSpeed
+            };
+            
+            for(let i=0; i<3; i++) {
+                let cloud = new Cloud();
+                cloud.x = Math.random() * canvas.width;
+                clouds.push(cloud);
+            }
+        }
+
+        function handleEntities() {
+            if (state.frames % 350 === 0) clouds.push(new Cloud());
+
+            clouds.forEach(cloud => cloud.update());
+            clouds = clouds.filter(cloud => !cloud.markedForDeletion);
+            
+            particles.forEach(p => p.update());
+            particles = particles.filter(p => !p.markedForDeletion);
+        }
+
+        function drawEnvironment() {
+            let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            grad.addColorStop(0, '#74b9ff'); 
+            grad.addColorStop(1, '#dfe6e9');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = 'rgba(255, 234, 167, 0.9)';
+            ctx.beginPath();
+            ctx.arc(canvas.width * 0.8, canvas.height * 0.3, 40, 0, Math.PI * 2);
+            ctx.fill();
+
+            clouds.forEach(c => c.draw());
+
+            ctx.fillStyle = '#2d3436';
+            const groundY = canvas.height - CONFIG.groundHeight;
+            ctx.fillRect(0, groundY, canvas.width, CONFIG.groundHeight);
+            
+            ctx.fillStyle = '#1e272e';
+            ctx.fillRect(0, groundY, canvas.width, 4);
+
+            if(player) {
+                ctx.save();
+                let shadowY = groundY;
+                let heightAboveGround = groundY - (player.y + player.height);
+                let shadowAlpha = Math.max(0.05, 0.4 - (heightAboveGround * 0.003));
+                let shadowWidth = player.width * 0.8 + (player.isGrounded ? Math.sin(state.frames * 0.3) * 5 : 0);
+                
+                ctx.fillStyle = `rgba(0, 0, 0, ${shadowAlpha})`;
+                ctx.beginPath();
+                ctx.ellipse(player.x + player.width/2, shadowY + 8, shadowWidth / 1.5, 4, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function drawMobileControls() {
+            const isMobile = window.innerWidth < 1024;
+            if (isMobile) {
+                ctx.save();
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.lineWidth = 1;
+
+                ctx.beginPath();
+                ctx.rect(20, canvas.height - 80, 70, 60);
+                if (keys.ArrowLeft) ctx.fill();
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.rect(100, canvas.height - 80, 70, 60);
+                if (keys.ArrowRight) ctx.fill();
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.rect(canvas.width - 90, canvas.height - 80, 70, 60);
+                if (keys.Space) ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = 'rgba(223, 230, 233, 0.8)';
+                ctx.font = 'bold 24px "Segoe UI", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('<', 55, canvas.height - 43);
+                ctx.fillText('>', 135, canvas.height - 43);
+                ctx.font = 'bold 16px "Segoe UI", sans-serif';
+                ctx.fillText('JUMP', canvas.width - 55, canvas.height - 45);
+
+                ctx.restore();
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawEnvironment();
+            handleEntities();
+            particles.forEach(p => p.draw());
+            player.update();
+            player.draw();
+            drawMobileControls();
+            state.frames++;
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (keys.hasOwnProperty(e.code)) keys[e.code] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
+        });
+
+        window.addEventListener('touchstart', (e) => {
+            for(let i=0; i<e.changedTouches.length; i++) {
+                let x = e.changedTouches[i].clientX;
+                let y = e.changedTouches[i].clientY;
+                
+                if (y > canvas.height - 90) { 
+                    if (x < 95) keys.ArrowLeft = true;
+                    else if (x >= 95 && x <= 180) keys.ArrowRight = true;
+                    else if (x > canvas.width - 100) keys.Space = true;
+                } else {
+                    keys.Space = true;
+                }
+            }
+        }, {passive: false});
+
+        window.addEventListener('touchend', (e) => {
+            if (e.touches.length === 0) {
+                keys.ArrowLeft = false;
+                keys.ArrowRight = false;
+                keys.Space = false;
+            }
+        }, {passive: false});
+
+        resizeCanvas();
+        initGame();
+        animate();
+    </script>
+</body>
+</html>
