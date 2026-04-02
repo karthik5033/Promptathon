@@ -1,8 +1,8 @@
 import { GAME_CONFIG } from "@/lib/gameConfig";
 
 export class IEEECoin {
-  width: number = 40;
-  height: number = 40;
+  width: number = 24;
+  height: number = 24;
   x: number;
   y: number;
   markedForDeletion: boolean = false;
@@ -24,25 +24,23 @@ export class IEEECoin {
 
   draw(ctx: CanvasRenderingContext2D) {
     ctx.save();
-    ctx.translate(this.x, this.y + this.floatOffset);
+    ctx.translate(this.x + this.width / 2, this.y + this.height / 2 + this.floatOffset);
     
-    // Draw Coin
-    ctx.fillStyle = '#f1c40f'; // Golden
+    // Draw Coin with glowing effect
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = '#ffd700';
+    ctx.fillStyle = '#f1c40f'; // Golden / yellow
     ctx.beginPath();
-    ctx.arc(this.width/2, this.height/2, this.width/2, 0, Math.PI * 2);
+    ctx.arc(0, 0, 12, 0, Math.PI * 2);
     ctx.fill();
     
-    ctx.fillStyle = '#f39c12'; // Inner ring
-    ctx.beginPath();
-    ctx.arc(this.width/2, this.height/2, this.width/2 - 4, 0, Math.PI * 2);
-    ctx.fill();
-    
+    // Text "80"
+    ctx.shadowBlur = 0;
     ctx.fillStyle = '#ffffff';
-    ctx.font = "bold 10px Arial";
+    ctx.font = "bold 12px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("IEEE", this.width/2, this.height/2 - 4);
-    ctx.fillText("1946", this.width/2, this.height/2 + 6);
+    ctx.fillText("80", 0, 1);
     
     ctx.restore();
   }

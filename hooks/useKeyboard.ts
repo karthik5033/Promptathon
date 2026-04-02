@@ -1,30 +1,33 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export function useKeyboard() {
-  const [keys, setKeys] = useState<{ [key: string]: boolean }>({
+  const keysRef = useRef<{ [key: string]: boolean }>({
     Space: false,
     ArrowUp: false,
     ArrowLeft: false,
     ArrowRight: false,
+    _jumpConsumed: false
   });
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === "Space" || e.code === "ArrowUp" || e.code === "ArrowLeft" || e.code === "ArrowRight") {
-        setKeys((prev) => {
-            if(prev[e.code]) return prev;
-            return { ...prev, [e.code]: true };
-        });
+      // Prevent default scrolling for game keys
+      if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
+        if (e.target === document.body) {
+           e.preventDefault();
+        }
       }
+      keysRef.current[e.code] = true;
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.code === "Space" || e.code === "ArrowUp" || e.code === "ArrowLeft" || e.code === "ArrowRight") {
-        setKeys((prev) => ({ ...prev, [e.code]: false }));
+      keysRef.current[e.code] = false;
+      if (e.code === "Space" || e.code === "ArrowUp") {
+        keysRef.current._jumpConsumed = false;
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown, { passive: false });
     window.addEventListener("keyup", handleKeyUp);
 
     return () => {
@@ -33,5 +36,5 @@ export function useKeyboard() {
     };
   }, []);
 
-  return keys;
+  return keysRef.current;
 }
