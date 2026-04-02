@@ -21,7 +21,7 @@ import { classifySkill, getStoredSkill, storeSkill, PlayerStats } from '@/lib/sk
 import { HintOverlay, HintUrgency } from './HintOverlay';
 import { LoreCard } from './LoreCard';
 
-type GameState = 'MENU' | 'PLAYING' | 'GAME_OVER';
+type GameState = 'MENU' | 'PLAYING' | 'PAUSED' | 'GAME_OVER';
 
 interface State {
   status: GameState;
@@ -39,7 +39,8 @@ type Action =
   | { type: 'CHANGE_ERA'; data: EraConfig }
   | { type: 'HIDE_BANNER' }
   | { type: 'TOGGLE_GRAVITY' }
-  | { type: 'TOGGLE_MUTE' };
+  | { type: 'TOGGLE_MUTE' }
+  | { type: 'TOGGLE_PAUSE' };
 
 const initialState: State = {
   status: 'MENU',
@@ -69,6 +70,10 @@ function gameReducer(state: State, action: Action): State {
       return { ...state, eraRenderData: action.data, bannerVisible: true };
     case 'HIDE_BANNER':
       return { ...state, bannerVisible: false };
+    case 'TOGGLE_PAUSE':
+      if (state.status !== 'PLAYING' && state.status !== 'PAUSED') return state;
+      const willPause = state.status === 'PLAYING';
+      return { ...state, status: willPause ? 'PAUSED' : 'PLAYING' };
     case 'TOGGLE_MUTE':
       const newMuted = !state.muted;
       (GAME_CONFIG as any).muted = newMuted;
@@ -164,6 +169,7 @@ export default function GameCanvas() {
 
     gameOverAudioRef.current = new Audio('/music/gameover.mp3');
     gameOverAudioRef.current.volume = 1.0; 
+    gameOverAudioRef.current.playbackRate = 1.5; 
   }, []);
 
   useEffect(() => {
@@ -187,13 +193,16 @@ export default function GameCanvas() {
     dispatch({ type: 'START' });
     initGame();
 
-    const handleKeyM = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'KeyM' && !e.repeat) {
         dispatch({ type: 'TOGGLE_MUTE' });
       }
+      if ((e.code === 'KeyP' || e.code === 'Escape') && !e.repeat) {
+        dispatch({ type: 'TOGGLE_PAUSE' });
+      }
     };
-    window.addEventListener('keydown', handleKeyM);
-    return () => window.removeEventListener('keydown', handleKeyM);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const initGame = () => {
@@ -728,6 +737,12 @@ export default function GameCanvas() {
           <HUD gravityOn={state.gravityEnabled} toggleGravity={toggleGravityCallback} />
           <div className="absolute top-4 right-4 z-30 flex flex-col items-end gap-2 p-3 bg-black/60 backdrop-blur-md border border-white/20 rounded-xl shadow-lg">
              <button
+                onClick={() => dispatch({ type: 'TOGGLE_PAUSE' })}
+                className="w-full px-3 py-1.5 rounded-lg font-bold text-xs uppercase transition-all duration-200 border bg-yellow-900/60 border-yellow-400/50 text-yellow-300 hover:bg-yellow-800/60 mb-1"
+              >
+                ⏸︎ Pause Game
+              </button>
+             <button
                 onClick={() => dispatch({ type: 'TOGGLE_MUTE' })}
                 className={`w-full px-4 py-1.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-all duration-300 border ${
                   !state.muted
@@ -790,6 +805,34 @@ export default function GameCanvas() {
         <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 bg-gradient-to-br from-yellow-400 to-yellow-600 text-black px-12 py-6 rounded-3xl shadow-[0_0_80px_rgba(250,204,21,0.8)] z-50 text-center animate-bounce border border-yellow-200 backdrop-blur-md pointer-events-none">
             <h2 className="text-5xl font-black tracking-tighter drop-shadow-sm">IEEE CompSoc 80th!</h2>
             <p className="text-xl font-bold text-yellow-950 mt-2 uppercase tracking-widest">+500 Points Secret</p>
+        </div>
+      )}
+
+       {state.status === 'PAUSED' && (
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center text-white z-[60] animate-fade-in">
+          <div className="bg-[#0a0a0a] border border-white/10 p-10 rounded-3xl text-center shadow-2xl">
+            <h2 className="text-5xl font-black mb-8 tracking-tighter">GAME PAUSED</h2>
+            <div className="flex flex-col gap-4">
+              <button 
+                onClick={() => dispatch({ type: 'TOGGLE_PAUSE' })}
+                className="px-12 py-4 bg-white text-black font-black text-xl rounded-xl hover:scale-105 active:scale-95 transition-all"
+              >
+                RESUME SESSION
+              </button>
+              <button 
+                onClick={() => { initGame(); dispatch({ type: 'RESTART' }); }} 
+                className="px-12 py-3 bg-white/5 border border-white/10 rounded-xl font-bold hover:bg-white/10 transition-all uppercase text-sm tracking-widest"
+              >
+                Restart Current
+              </button>
+              <button 
+                onClick={() => router.push('/')} 
+                className="text-gray-500 hover:text-white transition-colors text-xs uppercase tracking-widest mt-4"
+              >
+                Exit to Menu
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

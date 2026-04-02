@@ -138,64 +138,87 @@ function CharacterPreview({ characterId, color }: { characterId: CharacterId, co
 
 // Private drawing helpers for preview (scoped to file)
 function drawMario(ctx: CanvasRenderingContext2D, u: number, v: number, stride: number) {
-  ctx.fillStyle = '#e52521'; ctx.fillRect(2*u, 0, 6*u, 2*v); ctx.fillRect(1*u, 2*v, 8*u, 1*v);
-  ctx.fillStyle = '#ffcca6'; ctx.fillRect(2*u, 3*v, 6*u, 3*v);
-  ctx.fillStyle = '#5c3a21'; ctx.fillRect(2*u, 5*v, 6*u, 1.5*v); ctx.fillRect(1*u, 4*v, 2*u, 2*v);
-  ctx.fillStyle = '#000'; ctx.fillRect(3*u, 3.5*v, 1.2*u, 1*v); ctx.fillRect(6*u, 3.5*v, 1.2*u, 1*v);
-  ctx.fillStyle = '#0043bb'; ctx.fillRect(2*u, 6*v, 6*u, 5*v);
-  ctx.fillStyle = '#e52521'; ctx.fillRect(0*u, 6*v, 2*u, 3*v); ctx.fillRect(8*u, 6*v, 2*u, 3*v);
-  ctx.fillStyle = '#0043bb'; ctx.fillRect(3*u, 4*v, 1.5*u, 2*v); ctx.fillRect(5.5*u, 4*v, 1.5*u, 2*v);
-  ctx.fillStyle = '#ffcca6'; ctx.fillRect(0, 8*v, 1.5*u, 1.5*v); ctx.fillRect(8.5*u, 8*v, 1.5*u, 1.5*v);
-  ctx.fillStyle = '#0043bb'; ctx.fillRect((2 - stride)*u, 11*v, 2.5*u, 3*v); ctx.fillRect((5.5 + stride)*u, 11*v, 2.5*u, 3*v);
-  ctx.fillStyle = '#5c3a21'; ctx.fillRect((1.5 - stride)*u, 13.5*v, 3.5*u, 2*v); ctx.fillRect((5 + stride)*u, 13.5*v, 3.5*u, 2*v);
+    ctx.fillStyle = '#5c3a21'; ctx.fillRect(1*u, 2.5*v, 7*u, 2*v);
+    ctx.fillStyle = '#e52521'; ctx.fillRect(2*u, 0, 6*u, 2*v); ctx.fillRect(u, 1.8*v, 8.5*u, 1.2*v);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(4*u, 0.5*v, 2*u, 1*v);
+    ctx.fillStyle = '#e52521'; ctx.fillRect(4.8*u, 0.7*v, 0.4*u, 0.8*v);
+    ctx.fillStyle = '#ffcca6'; ctx.fillRect(2*u, 3*v, 6*u, 3.5*v);
+    ctx.fillStyle = '#000'; ctx.fillRect(3.5*u, 3.8*v, 1*u, 1.2*v); ctx.fillRect(6.5*u, 3.8*v, 1*u, 1.2*v);
+    ctx.fillStyle = '#f0a07a'; ctx.fillRect(4.5*u, 5*v, 2*u, 1*v);
+    ctx.fillStyle = '#442b1a'; ctx.fillRect(2*u, 5.5*v, 6.5*u, 1.5*v); ctx.fillRect(1.5*u, 6.2*v, 1.5*u, 0.8*v);
+    ctx.fillStyle = '#0043bb'; ctx.fillRect(2*u, 7*v, 6*u, 4.5*v);
+    ctx.fillRect(2.8*u, 6.5*v, 1.2*u, 1.5*v); ctx.fillRect(6*u, 6.5*v, 1.2*u, 1.5*v);
+    ctx.fillStyle = '#f6c90e'; ctx.fillRect(3*u, 8.5*v, u*0.8, u*0.8); ctx.fillRect(6.2*u, 8.5*v, u*0.8, u*0.8);
+    ctx.fillStyle = '#e52521'; ctx.fillRect(1*u, 7.5*v, 1.5*u, 2.5*v); ctx.fillRect(7.5*u, 7.5*v, 1.5*u, 2.5*v);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0.5*u, 9.5*v, 2*u, 1.8*v); ctx.fillRect(7.5*u, 9.5*v, 2*u, 1.8*v);
+    ctx.fillStyle = '#0043bb'; ctx.fillRect((2 - stride/2)*u, 11.5*v, 2.2*u, 2.5*v); ctx.fillRect((5.8 + stride/2)*u, 11.5*v, 2.2*u, 2.5*v);
+    ctx.fillStyle = '#442b1a'; ctx.fillRect((1.5 - stride/2)*u, 14*v, 3.5*u, 2*v); ctx.fillRect((5 + stride/2)*u, 14*v, 3.5*u, 2*v);
 }
 
 function drawBill(ctx: CanvasRenderingContext2D, u: number, v: number, stride: number) {
-  ctx.fillStyle = '#5c3a21'; ctx.fillRect(2*u, 0, 6*u, 1.5*v);
-  ctx.fillStyle = '#ffcca6'; ctx.fillRect(2*u, 1.5*v, 6*u, 4*v);
-  ctx.strokeStyle = '#333'; ctx.strokeRect(2.5*u, 2.5*v, 2*u, 1.5*v); ctx.strokeRect(5.5*u, 2.5*v, 2*u, 1.5*v);
-  ctx.fillStyle = 'rgba(100,200,255,0.3)'; ctx.fillRect(2.5*u, 2.5*v, 2*u, 1.5*v); ctx.fillRect(5.5*u, 2.5*v, 2*u, 1.5*v);
-  ctx.strokeStyle = '#c0835a'; ctx.beginPath(); ctx.arc(5*u, 5*v, 1.5*u, 0, Math.PI); ctx.stroke();
-  ctx.fillStyle = '#1e3a5f'; ctx.fillRect(1*u, 5.5*v, 8*u, 5.5*v);
-  ctx.fillStyle = '#ffffff'; ctx.fillRect(4*u, 5.5*v, 2*u, 4*v);
-  ctx.fillStyle = '#4a90d9'; ctx.fillRect(4.5*u, 5.5*v, 1*u, 5*v);
-  ctx.fillStyle = '#ffcca6'; ctx.fillRect(0, 8*v, 1.5*u, 1.5*v); ctx.fillRect(8.5*u, 8*v, 1.5*u, 1.5*v);
-  ctx.fillStyle = '#1e3a5f'; ctx.fillRect((2 - stride)*u, 11*v, 2.5*u, 3*v); ctx.fillRect((5.5 + stride)*u, 11*v, 2.5*u, 3*v);
-  ctx.fillStyle = '#111'; ctx.fillRect((1.5 - stride)*u, 13.5*v, 3.5*u, 2*v); ctx.fillRect((5 + stride)*u, 13.5*v, 3.5*u, 2*v);
+    ctx.fillStyle = '#442b1a'; ctx.fillRect(1.5*u, 0, 7*u, 2.5*v); ctx.fillRect(1*u, 1*v, u, 2*v); ctx.fillRect(8*u, 1*v, u, 2*v);
+    ctx.fillStyle = '#ffcca6'; ctx.fillRect(2*u, 1.5*v, 6*u, 4.5*v);
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.strokeRect(2.5*u, 2.5*v, 2*u, 1.5*v); ctx.strokeRect(5.5*u, 2.5*v, 2*u, 1.5*v);
+    ctx.fillStyle = 'rgba(100,200,255,0.2)'; ctx.fillRect(2.5*u, 2.5*v, 2*u, 1.5*v); ctx.fillRect(5.5*u, 2.5*v, 2*u, 1.5*v);
+    ctx.beginPath(); ctx.strokeStyle = '#DAA520'; ctx.moveTo(4.5*u, 3*v); ctx.lineTo(5.5*u, 3*v); ctx.stroke();
+    ctx.fillStyle = '#1e3a5f'; ctx.fillRect(1*u, 6*v, 8*u, 5.5*v);
+    ctx.fillStyle = '#2c5282'; ctx.beginPath(); ctx.moveTo(4*u, 6*v); ctx.lineTo(3*u, 9*v); ctx.lineTo(4*u, 9*v); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(6*u, 6*v); ctx.lineTo(7*u, 9*v); ctx.lineTo(6*u, 9*v); ctx.fill();
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(4.2*u, 6*v, 1.6*u, 4.5*v);
+    ctx.fillStyle = '#2b6cb0'; ctx.fillRect(4.6*u, 6.5*v, 0.8*u, 4*v);
+    ctx.fillStyle = '#1e3a5f'; ctx.fillRect(0.5*u, 6*v, 1*u, 3*v); ctx.fillRect(8.5*u, 6*v, 1*u, 3*v);
+    ctx.fillStyle = '#ffcca6'; ctx.fillRect(0.3*u, 8.5*v, 1.4*u, 1.5*v); ctx.fillRect(8.3*u, 8.5*v, 1.4*u, 1.5*v);
+    ctx.fillStyle = '#2c5282'; ctx.fillRect((2.2 - stride/2)*u, 11*v, 2.2*u, 3*v); ctx.fillRect((5.6 + stride/2)*u, 11*v, 2.2*u, 3*v);
+    ctx.fillStyle = '#1a1a1a'; ctx.fillRect((1.8 - stride/2)*u, 14*v, 3*u, 2*v); ctx.fillRect((5.2 + stride/2)*u, 14*v, 3*u, 2*v);
 }
 
 function drawRobot(ctx: CanvasRenderingContext2D, u: number, v: number, stride: number) {
-  ctx.fillStyle = '#b0c4de'; ctx.fillRect(2*u, 0, 6*u, 5*v);
-  ctx.fillStyle = '#00ffff'; ctx.fillRect(3*u, 1*v, 4*u, 2*v);
-  ctx.fillStyle = '#888'; ctx.fillRect(5*u, -2*v, 1*u, 2*v);
-  ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.arc(5.5*u, -2*v, 1.5, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#4a5568'; ctx.fillRect(2*u, 5*v, 6*u, 5*v);
-  ctx.fillStyle = '#ffd700'; ctx.fillRect(3*u, 6*v, 3*u, 2*v);
-  ctx.fillStyle = '#b0c4de'; ctx.fillRect(0*u, 5*v, 2*u, 3*v); ctx.fillRect(8*u, 5*v, 2*u, 3*v);
-  ctx.fillStyle = '#888'; ctx.beginPath(); ctx.arc(1*u, 8*v, u, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(9*u, 8*v, u, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#2d3748'; ctx.fillRect((2 - stride)*u, 10*v, 2.5*u, 4*v); ctx.fillRect((5.5 + stride)*u, 10*v, 2.5*u, 4*v);
-  ctx.fillStyle = '#1a202c'; ctx.fillRect((1.5 - stride)*u, 13*v, 3.5*u, 2*v); ctx.fillRect((5 + stride)*u, 13*v, 3.5*u, 2*v);
+    ctx.fillStyle = '#cbd5e0'; ctx.fillRect(2.5*u, 0, 5*u, 4.5*v);
+    ctx.fillStyle = '#718096'; ctx.fillRect(2.5*u, 0, 0.5*u, 4.5*v); ctx.fillRect(7*u, 0, 0.5*u, 4.5*v);
+    ctx.fillStyle = '#1a202c'; ctx.fillRect(3.2*u, 1*v, 3.6*u, 2.5*v);
+    ctx.fillStyle = '#00ffff'; ctx.fillRect(3.8*u, 1.8*v, 0.8*u, 0.8*v); ctx.fillRect(5.4*u, 1.8*v, 0.8*u, 0.8*v);
+    ctx.strokeStyle = '#4a5568'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(3*u, 0); ctx.lineTo(2*u, -1.5*v); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(7*u, 0); ctx.lineTo(8*u, -1.5*v); ctx.stroke();
+    ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.arc(2*u, -1.5*v, 2, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#00ff00'; ctx.beginPath(); ctx.arc(8*u, -1.5*v, 2, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#a0aec0'; ctx.fillRect(2*u, 5*v, 6*u, 5.5*v);
+    ctx.fillStyle = '#2c5282'; ctx.fillRect(3.5*u, 6.2*v, 3*u, 3*v);
+    ctx.fillStyle = '#ffffff'; ctx.font = `bold ${u*0.8}px sans-serif`; ctx.fillText('IEEE', 3.8*u, 8.2*v);
+    ctx.fillStyle = '#718096'; ctx.fillRect(1*u, 5.5*v, 1*u, 3.5*v); ctx.fillRect(8*u, 5.5*v, 1*u, 3.5*v);
+    ctx.fillStyle = '#4a5568'; ctx.beginPath(); ctx.arc(1*u, 8*v, 1.2*u, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(9*u, 8*v, 1.2*u, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#2d3748'; ctx.fillRect((2.2 - stride/2)*u, 11*v, 2.5*u, 3.5*v); ctx.fillRect((5.3 + stride/2)*u, 11*v, 2.5*u, 3.5*v);
+    ctx.fillStyle = '#1a202c'; ctx.beginPath(); ctx.arc((3.4 - stride/2)*u, 14.5*v, 1.2*u, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc((6.5 + stride/2)*u, 14.5*v, 1.2*u, 0, Math.PI*2); ctx.fill();
 }
 
 function drawAda(ctx: CanvasRenderingContext2D, u: number, v: number, stride: number) {
-  ctx.fillStyle = '#2c1810'; ctx.fillRect(2*u, 0, 6*u, 2*v); ctx.beginPath(); ctx.arc(5*u, 2*v, 3*u, Math.PI, 0); ctx.fill();
-  ctx.fillStyle = '#f0c8a0'; ctx.fillRect(2.5*u, 2*v, 5*u, 4*v);
-  ctx.fillStyle = '#2c1810'; ctx.fillRect(3.5*u, 3*v, 1*u, 1*v); ctx.fillRect(6*u, 3*v, 1*u, 1*v);
-  ctx.fillStyle = '#6d28d9'; ctx.fillRect(2*u, 6*v, 6*u, 4*v);
-  ctx.fillStyle = '#7c3aed'; ctx.beginPath(); ctx.moveTo(0, 10*v); ctx.lineTo(2*u, 10*v); ctx.lineTo(0*u, 16*v); ctx.lineTo(10*u, 16*v); ctx.lineTo(8*u, 10*v); ctx.lineTo(10*u, 10*v); ctx.fill();
-  ctx.fillStyle = '#f5deb3'; ctx.fillRect(8.5*u, 7*v, 2*u, 3*v); ctx.strokeStyle = '#8B4513'; ctx.strokeRect(8.5*u, 7*v, 2*u, 3*v);
+    ctx.fillStyle = '#2c1810'; ctx.beginPath(); ctx.ellipse(5*u, 2*v, 3.5*u, 2.5*v, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(2.5*u, 3*v, 1.2*u, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(7.5*u, 3*v, 1.2*u, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#f0c8a0'; ctx.fillRect(3*u, 2*v, 4*u, 4.5*v);
+    ctx.fillStyle = '#1a0b05'; ctx.fillRect(3.8*u, 3.5*v, 0.8*u, 0.8*v); ctx.fillRect(5.4*u, 3.5*v, 0.8*u, 0.8*v);
+    ctx.fillStyle = '#44337a'; ctx.fillRect(2.5*u, 6.5*v, 5*u, 4*v);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(3*u, 6.5*v, 4*u, 0.6*v);
+    ctx.fillStyle = '#553c9a'; ctx.beginPath(); ctx.moveTo(2.5*u, 10.5*v); ctx.lineTo(7.5*u, 10.5*v); ctx.lineTo(9.5*u, 16*v); ctx.lineTo(0.5*u, 16*v); ctx.fill();
+    ctx.fillStyle = '#f0c8a0'; ctx.fillRect(1.5*u, 7*v, 1.2*u, 2.5*v); ctx.fillRect(7.3*u, 7*v, 1.2*u, 2.5*v);
+    ctx.fillStyle = '#fef3c7'; ctx.fillRect(7.5*u, 8*v, 2.5*u, 3.5*v);
+    ctx.strokeStyle = '#d97706'; ctx.strokeRect(7.5*u, 8*v, 2.5*u, 3.5*v);
 }
 
 function drawLinus(ctx: CanvasRenderingContext2D, u: number, v: number, stride: number) {
-  ctx.fillStyle = '#1a1a1a'; ctx.fillRect(1.5*u, 0, 7*u, 2.5*v); ctx.fillRect(1*u, 1*v, 1*u, 2*v); ctx.fillRect(8*u, 0.5*v, 1*u, 2*v); ctx.fillRect(3*u, 0, 1*u, 1*v);
-  ctx.fillStyle = '#ffcca6'; ctx.fillRect(2*u, 2.5*v, 6*u, 3.5*v);
-  ctx.fillStyle = '#2a2a2a'; ctx.fillRect(2*u, 4.5*v, 6*u, 1.5*v);
-  ctx.fillStyle = '#1a4a8a'; ctx.fillRect(3*u, 3*v, 1.2*u, 1*v); ctx.fillRect(6*u, 3*v, 1.2*u, 1*v);
-  ctx.fillStyle = '#2d3748'; ctx.fillRect(1*u, 6*v, 8*u, 5.5*v);
-  ctx.fillStyle = '#1a202c'; ctx.fillRect(1*u, 6*v, 8*u, 1*v);
-  ctx.fillStyle = '#f6c90e'; ctx.font = `bold ${u*1.1}px monospace`; ctx.fillText('LINUX', 2.2*u, 10*v);
-  ctx.fillStyle = '#ffcca6'; ctx.fillRect(0, 8*v, 1.5*u, 1.5*v); ctx.fillRect(8.5*u, 8*v, 1.5*u, 1.5*v);
-  ctx.fillStyle = '#2b4490'; ctx.fillRect((2 - stride)*u, 11.5*v, 2.5*u, 3*v); ctx.fillRect((5.5 + stride)*u, 11.5*v, 2.5*u, 3*v);
-  ctx.fillStyle = '#f0f0f0'; ctx.fillRect((1.5 - stride)*u, 13.5*v, 3.5*u, 2*v); ctx.fillRect((5 + stride)*u, 13.5*v, 3.5*u, 2*v);
-  ctx.fillStyle = '#e52521'; ctx.fillRect((1.5 - stride)*u, 14.5*v, 3.5*u, 0.7*v); ctx.fillRect((5 + stride)*u, 14.5*v, 3.5*u, 0.7*v);
+    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(1.5*u, 0, 7.5*u, 2.5*v); ctx.fillRect(1*u, 1*v, 1.2*u, 3*v); ctx.fillRect(8*u, 1*v, 1.2*u, 3*v);
+    ctx.fillStyle = '#ffcca6'; ctx.fillRect(2*u, 2.5*v, 6*u, 3.8*v);
+    ctx.fillStyle = '#000'; ctx.fillRect(3.2*u, 3.8*v, 1.2*u, 1*v); ctx.fillRect(6.2*u, 3.8*v, 1.2*u, 1*v);
+    ctx.fillStyle = '#2d3748'; ctx.fillRect(1*u, 6.5*v, 8*u, 5*v);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(4.8*u, 6.5*v, 0.2*u, 2.5*v); ctx.fillRect(5.4*u, 6.5*v, 0.2*u, 2.5*v);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(4*u, 8*v, 2.5*u, 2.3*v);
+    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(4.5*u, 8.2*v, 1.5*u, 1*v);
+    ctx.fillStyle = '#f6c90e'; ctx.fillRect(5*u, 9.5*v, 0.6*u, 0.5*v);
+    ctx.fillStyle = '#2d3748'; ctx.fillRect(0.2*u, 7*v, 1.2*u, 3*v); ctx.fillRect(8.6*u, 7*v, 1.2*u, 3*v);
+    ctx.fillStyle = '#ffcca6'; ctx.fillRect(0*u, 9.5*v, 1.4*u, 1.4*v); ctx.fillRect(8.6*u, 9.5*v, 1.4*u, 1.4*v);
+    ctx.fillStyle = '#2b4490'; ctx.fillRect((2.2 - stride/2)*u, 11.5*v, 2.3*u, 3*v); ctx.fillRect((5.5 + stride/2)*u, 11.5*v, 2.3*u, 3*v);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect((1.8 - stride/2)*u, 14.5*v, 3.2*u, 1.5*v); ctx.fillRect((5 + stride/2)*u, 14.5*v, 3.2*u, 1.5*v);
+    ctx.fillStyle = '#e52521'; ctx.fillRect((1.8 - stride/2)*u, 15.2*v, 3.2*u, 0.8*v); ctx.fillRect((5 + stride/2)*u, 15.2*v, 3.2*u, 0.8*v);
 }
