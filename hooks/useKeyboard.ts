@@ -1,22 +1,35 @@
 import { useEffect, useRef } from "react";
 
-export function useKeyboard() {
+export function useKeyboard(toggleGravity?: () => void) {
   const keysRef = useRef<{ [key: string]: boolean }>({
     Space: false,
     ArrowUp: false,
     ArrowLeft: false,
     ArrowRight: false,
-    _jumpConsumed: false
+    KeyH: false,
+    KeyG: false,
+    _jumpConsumed: false,
+    _hConsumed: false,
+    _gConsumed: false
   });
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'KeyG' && document.activeElement?.tagName === 'INPUT') {
+        return;
+      }
       // Prevent default scrolling for game keys
       if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
         if (e.target === document.body) {
            e.preventDefault();
         }
       }
+
+      if (e.code === 'KeyG' && toggleGravity && !keysRef.current._gConsumed) {
+        keysRef.current._gConsumed = true;
+        toggleGravity();
+      }
+
       keysRef.current[e.code] = true;
     };
 
@@ -24,6 +37,9 @@ export function useKeyboard() {
       keysRef.current[e.code] = false;
       if (e.code === "Space" || e.code === "ArrowUp") {
         keysRef.current._jumpConsumed = false;
+      }
+      if (e.code === "KeyG") {
+        keysRef.current._gConsumed = false;
       }
     };
 

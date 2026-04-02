@@ -2,6 +2,15 @@ import { GAME_CONFIG } from "@/lib/gameConfig";
 import { Particle } from "./ParticleSystem";
 import { Platform } from "./Platform";
 
+export type HintUrgency = "NOW" | "SOON" | "SAFE";
+
+export interface HintResult {
+  shouldJump: boolean;
+  urgency: HintUrgency;
+  landingX: number;
+  clearanceMargin: number;
+}
+
 export class Player {
   width: number = 36;
   height: number = 40;
@@ -44,6 +53,53 @@ export class Player {
     return true; 
   }
 
+  predictJumpPath(obstacles: any[], speed: number): HintResult {
+    const upcoming = obstacles.filter(o => o.x > this.x && o.x - this.x < 600);
+    if (upcoming.length === 0) return { shouldJump: false, urgency: "SAFE", landingX: 0, clearanceMargin: 0 };
+    
+    let nextObs = upcoming[0];
+    for(let o of upcoming) if (o.x < nextObs.x) nextObs = o;
+    if (!nextObs.getHitbox) return { shouldJump: false, urgency: "SAFE", landingX: 0, clearanceMargin: 0 };
+    const obH = nextObs.getHitbox();
+
+    const dist = nextObs.x - this.x;
+    let urgency: HintUrgency = "SAFE";
+    if (dist < 400 && dist >= 200) urgency = "SOON";
+    else if (dist < 200) urgency = "NOW";
+
+    if (urgency === "SAFE") return { shouldJump: false, urgency, landingX: 0, clearanceMargin: 0 };
+
+    let simX = this.x;
+    let simY = this.y;
+    let simVy = GAME_CONFIG.jumpForce;
+    let wouldCollide = false;
+    let maxT = 150;
+    const absoluteGroundY = this.canvas.height - (this.canvas.height * GAME_CONFIG.groundHeightRatio);
+
+    while (simY < absoluteGroundY - this.height && maxT > 0) {
+      simX += speed; 
+      simVy += GAME_CONFIG.gravity;
+      simY += simVy;
+      
+      const realObstacleX = obH.x - (this.x - simX);
+
+      if (simX + this.width > realObstacleX && simX < realObstacleX + obH.width) {
+        if (simY + this.height > obH.y) {
+          wouldCollide = true;
+          break;
+        }
+      }
+      maxT--;
+    }
+
+    return { 
+      shouldJump: wouldCollide, 
+      urgency: wouldCollide ? urgency : "SAFE", 
+      landingX: simX, 
+      clearanceMargin: 0 
+    };
+  }
+
   update(keys: { [key: string]: boolean }, frames: number, particles: Particle[], platforms: Platform[], speed: number) {
     const prevY = this.y;
     const prevX = this.x;
@@ -65,7 +121,17 @@ export class Player {
     }
 
     // Gravity
-    this.vy += GAME_CONFIG.gravity;
+    if ((GAME_CONFIG as any).gravityEnabled) {
+      this.vy += GAME_CONFIG.gravity;
+    } else {
+      this.vy += (GAME_CONFIG as any).zeroGravityFloat;
+      this.vy *= 0.92;
+    }
+
+    if (!(GAME_CONFIG as any).gravityEnabled && this.vy < -18) {
+      this.vy = -18;
+    }
+
     this.y += this.vy;
 
     const absoluteGroundY = this.canvas.height - (this.canvas.height * GAME_CONFIG.groundHeightRatio);

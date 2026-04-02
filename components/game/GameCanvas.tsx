@@ -16,6 +16,10 @@ import { GAME_CONFIG, ERAS, EraConfig } from '@/lib/gameConfig';
 import { saveToLeaderboard } from '@/lib/leaderboard';
 import { IEEECoin } from './IEEECoin';
 import { DataBit, ShieldPowerUp } from './Collectibles';
+import { applyDifficultySettings } from '@/lib/adaptiveDifficulty';
+import { classifySkill, getStoredSkill, storeSkill, PlayerStats } from '@/lib/skillDetection';
+import { HintOverlay, HintUrgency } from './HintOverlay';
+import { LoreCard } from './LoreCard';
 
 type GameState = 'MENU' | 'PLAYING' | 'GAME_OVER';
 
@@ -23,6 +27,7 @@ interface State {
   status: GameState;
   eraRenderData: EraConfig | null;
   bannerVisible: boolean;
+  gravityEnabled: boolean;
 }
 
 type Action = 
@@ -31,22 +36,30 @@ type Action =
   | { type: 'RESTART' }
   | { type: 'SAVE_SCORE' }
   | { type: 'CHANGE_ERA'; data: EraConfig }
-  | { type: 'HIDE_BANNER' };
+  | { type: 'HIDE_BANNER' }
+  | { type: 'TOGGLE_GRAVITY' };
 
 const initialState: State = {
   status: 'MENU',
   eraRenderData: ERAS[0],
-  bannerVisible: true
+  bannerVisible: true,
+  gravityEnabled: true
 };
 
 function gameReducer(state: State, action: Action): State {
   switch (action.type) {
+    case 'TOGGLE_GRAVITY':
+      const newGravity = !state.gravityEnabled;
+      (GAME_CONFIG as any).gravityEnabled = newGravity;
+      return { ...state, gravityEnabled: newGravity };
     case 'START':
-      return { ...state, status: 'PLAYING', bannerVisible: true, eraRenderData: ERAS[0] };
+      (GAME_CONFIG as any).gravityEnabled = true;
+      return { ...state, status: 'PLAYING', bannerVisible: true, eraRenderData: ERAS[0], gravityEnabled: true };
     case 'GAME_OVER':
       return { ...state, status: 'GAME_OVER' };
     case 'RESTART':
-      return { ...initialState, status: 'PLAYING' };
+      (GAME_CONFIG as any).gravityEnabled = true;
+      return { ...initialState, status: 'PLAYING', gravityEnabled: true };
     case 'SAVE_SCORE':
       return { ...state, status: 'MENU' };
     case 'CHANGE_ERA':
@@ -61,7 +74,22 @@ function gameReducer(state: State, action: Action): State {
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [state, dispatch] = useReducer(gameReducer, initialState);
-  const keys = useKeyboard();
+  
+  const [gravityToggleMsg, setGravityToggleMsg] = useState<{ text: string, color: string, id: number } | null>(null);
+  const [gravityToggleFade, setGravityToggleFade] = useState(false);
+  
+  const toggleGravityCallback = () => {
+     dispatch({ type: 'TOGGLE_GRAVITY' });
+     const willBeGravityOn = !state.gravityEnabled;
+     setGravityToggleMsg({
+        text: willBeGravityOn ? "GRAVITY RESTORED" : "ZERO-G MODE",
+        color: willBeGravityOn ? "text-blue-400" : "text-purple-400",
+        id: Date.now()
+     });
+     setGravityToggleFade(false);
+  };
+  
+  const keys = useKeyboard(toggleGravityCallback);
   const router = useRouter();
 
   const gRef = useRef({
@@ -86,6 +114,38 @@ export default function GameCanvas() {
   
   const [showIEEEBanner, setShowIEEEBanner] = useState(false);
   const [playerName, setPlayerName] = useState("");
+  const [speedMode, setSpeedMode] = useState<'AUTO' | 'CUSTOM'>('AUTO');
+  const [customSpeed, setCustomSpeed] = useState<number>(3.0);
+
+  const [hintsEnabled, setHintsEnabled] = useState(false);
+  const [hintUrgency, setHintUrgency] = useState<HintUrgency>("SAFE");
+  const [playerCanvasPos, setPlayerCanvasPos] = useState<{x: number, y: number} | null>(null);
+  const [finalSkillInfo, setFinalSkillInfo] = useState<{score: number, skill: string, eraName: string, eraReached: number} | null>(null);
+
+  const lastObstacleXRef = useRef<number>(0);
+
+  const statsRef = useRef<PlayerStats>({
+    deaths: 0,
+    jumpsAttempted: 0,
+    jumpsSuccessful: 0,
+    totalFramesAlive: 0,
+    eraReached: 1,
+    obstaclesAvoided: 0
+  });
+
+  const speedModeRef = useRef<'AUTO' | 'CUSTOM'>('AUTO');
+  const customSpeedRef = useRef<number>(3.0);
+
+  useEffect(() => { speedModeRef.current = speedMode; }, [speedMode]);
+  useEffect(() => { customSpeedRef.current = customSpeed; }, [customSpeed]);
+
+  useEffect(() => {
+    if (gravityToggleMsg) {
+       const t1 = setTimeout(() => setGravityToggleFade(true), 50);
+       const t2 = setTimeout(() => setGravityToggleMsg(null), 1500);
+       return () => { clearTimeout(t1); clearTimeout(t2); };
+    }
+  }, [gravityToggleMsg]);
 
   useEffect(() => {
     dispatch({ type: 'START' });
@@ -95,6 +155,11 @@ export default function GameCanvas() {
   const initGame = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    const currentSkill = getStoredSkill();
+    applyDifficultySettings(currentSkill);
+    setHintsEnabled(currentSkill === "BEGINNER");
+    setHintUrgency("SAFE");
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -118,6 +183,7 @@ export default function GameCanvas() {
     shieldsRef.current = [];
     eraManagerRef.current = new EraManager();
     coinRef.current = null;
+    lastObstacleXRef.current = canvas.width;
 
     for (let i = 0; i < 6; i++) {
         const cloud = new Cloud(canvas.width, canvas.height, GAME_CONFIG.baseSpeed);
@@ -188,14 +254,9 @@ export default function GameCanvas() {
     const eraId = eraManagerRef.current?.currentEra.id || 1;
 
     // Obstacle and Platform Spawning
-    const lastEntityX = Math.max(
-       obstaclesRef.current.length > 0 ? obstaclesRef.current[obstaclesRef.current.length - 1].x : 0,
-       platformsRef.current.length > 0 ? platformsRef.current[platformsRef.current.length - 1].x : 0
-    );
-
-    const canSpawnEntity = (canvas.width - lastEntityX > GAME_CONFIG.minObstacleGap);
+    const gap = GAME_CONFIG.minObstacleGap + Math.random() * 300;
     
-    if (canSpawnEntity && Math.random() < GAME_CONFIG.obstacleSpawnChance) {
+    if (lastObstacleXRef.current < canvas.width - gap) {
         if (Math.random() < 0.40) { // 40% chance to spawn platforms
              const plat = new Platform(canvas.width, canvas.height, eraId);
              platformsRef.current.push(plat);
@@ -209,31 +270,36 @@ export default function GameCanvas() {
              }
 
         } else {
-             const obs = new Obstacle(canvas, eraId, g.currentSpeed);
+             const obs = new Obstacle(canvas, eraId);
              obstaclesRef.current.push(obs);
              
-             // Spawn a jumped arc of coins over the moving robot
+             // Spawn a jumped arc of coins over the obstacle
              for (let i=-1; i<=1; i++) {
                 let bit = new DataBit(canvas.width, canvas.height, eraId, g.frames);
-                bit.x = obs.x + (i * 45);
+                bit.x = obs.x + obs.width/2 + (i * 45); 
                 bit.y = obs.y - 65 - Math.cos(i) * 35; 
                 dataBitsRef.current.push(bit);
              }
         }
+        lastObstacleXRef.current = canvas.width;
     }
+    lastObstacleXRef.current -= g.currentSpeed;
 
     // Power-ups spawn occasionally independent of structure
     if (Math.random() < GAME_CONFIG.powerUpSpawnChance && !p.hasShield && shieldsRef.current.length === 0) {
       shieldsRef.current.push(new ShieldPowerUp(canvas.width, canvas.height, g.frames));
     }
 
+    obstaclesRef.current.forEach(obs => obs.update(g.currentSpeed));
+    obstaclesRef.current = obstaclesRef.current.filter(obs => !obs.isOffScreen);
+
     obstaclesRef.current.forEach(obs => {
-        obs.update(g.currentSpeed);
-        if (!obs.scored && obs.x + obs.width < p.x) {
-            obs.scored = true;
+        if (!obs.passed && obs.x + obs.width < p.x) {
+            obs.passed = true;
+            statsRef.current.obstaclesAvoided++;
+            statsRef.current.jumpsSuccessful++;
         }
     });
-    obstaclesRef.current = obstaclesRef.current.filter(obs => !obs.markedForDeletion);
 
     platformsRef.current.forEach(plat => plat.update(g.currentSpeed, g.frames));
     platformsRef.current = platformsRef.current.filter(plat => !plat.markedForDeletion);
@@ -272,12 +338,24 @@ export default function GameCanvas() {
     if (px < -pw) return true;
 
     // Obstacles
+    const pBox = {
+      x: px + 6,
+      y: py + 4,
+      width: pw - 12,
+      height: ph - 4
+    };
+
     for (const obs of obstaclesRef.current) {
-        const oh = obs.getHitbox();
-        if (px + 4 < oh.x + oh.width && px + pw - 4 > oh.x && py + 4 < oh.y + oh.height && py + ph - 4 > oh.y) {
+        const h = obs.hitbox;
+        if (
+          pBox.x < h.x + h.width &&
+          pBox.x + pBox.width > h.x &&
+          pBox.y < h.y + h.height &&
+          pBox.y + pBox.height > h.y
+        ) {
             if (!p.hitObstacle()) {
                 obs.markedForDeletion = true;
-                createExplosion(oh.x + oh.width/2, oh.y + oh.height/2, '#3498db');
+                createExplosion(h.x + h.width/2, h.y + h.height/2, '#3498db');
                 g.combo = 0;
                 g.comboMultiplier = 1;
             } else {
@@ -416,23 +494,65 @@ export default function GameCanvas() {
       }
 
       g.score += (0.1 * g.comboMultiplier);
+      statsRef.current.totalFramesAlive++;
 
       if (eraManagerRef.current) {
          eraManagerRef.current.update(g.score);
+         statsRef.current.eraReached = eraManagerRef.current.currentEra.id;
          if (eraManagerRef.current.eraChanged) {
-            g.currentSpeed += GAME_CONFIG.eraSpeedBoost;
+            let prevSkill = getStoredSkill();
+            let upgraded = false;
+            if (statsRef.current.eraReached >= 3 && prevSkill === "BEGINNER") {
+               storeSkill("INTERMEDIATE"); upgraded = true;
+            } else if (statsRef.current.eraReached >= 4 && prevSkill !== "PRO") {
+               storeSkill("PRO"); upgraded = true;
+            }
+            if (upgraded) applyDifficultySettings(getStoredSkill());
+
             const newEraProps = { ...eraManagerRef.current.currentEra };
             dispatch({ type: 'CHANGE_ERA', data: newEraProps });
          }
       }
 
+      if ((keys.Space || keys.ArrowUp) && !(keys as any)._jumpConsumedStats) {
+          statsRef.current.jumpsAttempted++;
+          (keys as any)._jumpConsumedStats = true;
+      }
+      if (!keys.Space && !keys.ArrowUp) (keys as any)._jumpConsumedStats = false;
+      
+      if (keys.KeyH && !(keys as any)._hConsumed) {
+         setHintsEnabled(prev => !prev);
+         (keys as any)._hConsumed = true;
+      }
+
       const isGameOver = checkCollisions();
       if (isGameOver) {
+          statsRef.current.deaths++;
+          const finalSkill = classifySkill(statsRef.current);
+          storeSkill(finalSkill);
+
+          setFinalSkillInfo({
+             score: g.score,
+             skill: finalSkill,
+             eraReached: eraManagerRef.current?.currentEra.id || 1,
+             eraName: eraManagerRef.current?.currentEra.name || "Unknown"
+          });
+
           dispatch({ type: 'GAME_OVER' });
           return;
       }
       
-      g.currentSpeed = Math.min(g.currentSpeed + (GAME_CONFIG.speedIncrement * 0.1), GAME_CONFIG.maxSpeed);
+      if (speedModeRef.current === 'AUTO') {
+          const maxSpeeds: Record<number, number> = { 1: 8, 2: 10, 3: 12, 4: 14, 5: 16 };
+          const eraId = eraManagerRef.current?.currentEra.id || 1;
+          const speedCap = maxSpeeds[eraId] || 16;
+          
+          if (g.currentSpeed < speedCap) {
+             g.currentSpeed += 0.0008;
+          }
+      } else {
+          g.currentSpeed = customSpeedRef.current;
+      }
 
       if (bgSystemRef.current) {
           bgSystemRef.current.update(g.currentSpeed, g.frames, canvas.width);
@@ -455,6 +575,41 @@ export default function GameCanvas() {
       if (playerRef.current) {
           playerRef.current.update(keys, g.frames, particlesRef.current, platformsRef.current, g.currentSpeed);
           playerRef.current.draw(ctx, g.frames, g.currentSpeed);
+
+          if (hintsEnabled && g.frames % 30 === 0) {
+             const hint = playerRef.current.predictJumpPath(obstaclesRef.current, g.currentSpeed);
+             setHintUrgency(hint.urgency);
+             const rect = canvas.getBoundingClientRect();
+             setPlayerCanvasPos({ x: playerRef.current.x + rect.left + playerRef.current.width/2, y: playerRef.current.y + rect.top });
+          }
+
+          if (!state.gravityEnabled && g.frames % 5 === 0) {
+             particlesRef.current.push(new Particle(
+                playerRef.current.x + playerRef.current.width/2,
+                playerRef.current.y + playerRef.current.height/2,
+                (Math.random() - 0.5) * 2,
+                -0.5,
+                Math.random() * 2 + 1,
+                'rgba(150, 100, 255, 0.6)'
+             ));
+          }
+
+          if (!state.gravityEnabled) {
+             ctx.save();
+             ctx.shadowBlur = 20;
+             ctx.shadowColor = '#a855f7';
+             ctx.strokeStyle = 'rgba(168, 85, 247, 0.4)';
+             ctx.lineWidth = 2;
+             ctx.beginPath();
+             ctx.arc(
+               playerRef.current.x + playerRef.current.width/2,
+               playerRef.current.y + playerRef.current.height/2,
+               playerRef.current.width * 0.9,
+               0, Math.PI * 2
+             );
+             ctx.stroke();
+             ctx.restore();
+          }
       }
     }
   }, state.status === 'PLAYING');
@@ -491,8 +646,53 @@ export default function GameCanvas() {
   return (
     <div className="relative w-full h-full overflow-hidden bg-black font-sans selection:bg-purple-500/30">
       <canvas ref={canvasRef} className="block w-full h-full" />
+      <HintOverlay urgency={hintUrgency} playerPos={playerCanvasPos} enabled={hintsEnabled && state.status === 'PLAYING'} />
       
-      {state.status === 'PLAYING' && state.eraRenderData && <HUD />}
+      {gravityToggleMsg && (
+        <div 
+           key={gravityToggleMsg.id} 
+           className={`absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none ${gravityToggleMsg.color} font-black text-4xl md:text-5xl tracking-[0.2em] font-mono transition-opacity duration-[1500ms] ease-out`}
+           style={{
+             textShadow: '0 0 15px currentColor',
+             opacity: gravityToggleFade ? 0 : 1
+           }}
+        >
+          {gravityToggleMsg.text}
+        </div>
+      )}
+
+      {state.status === 'PLAYING' && state.eraRenderData && (
+        <>
+          <HUD gravityOn={state.gravityEnabled} toggleGravity={toggleGravityCallback} />
+          <div className="absolute top-4 right-4 z-30 flex flex-col items-end gap-2 p-3 bg-black/60 backdrop-blur-md border border-white/20 rounded-xl shadow-lg">
+             <div className="flex bg-gray-800 rounded-lg overflow-hidden">
+                <button 
+                  onClick={() => setSpeedMode('AUTO')} 
+                  className={`px-3 py-1 font-bold text-xs uppercase ${speedMode === 'AUTO' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-gray-700'}`}
+                >Auto</button>
+                <button 
+                  onClick={() => setSpeedMode('CUSTOM')} 
+                  className={`px-3 py-1 font-bold text-xs uppercase ${speedMode === 'CUSTOM' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-gray-700'}`}
+                >Custom</button>
+             </div>
+             {speedMode === 'CUSTOM' && (
+                <div className="flex flex-col items-end">
+                   <label className="text-white/60 text-[10px] uppercase font-bold mb-1">Set Speed: {customSpeed.toFixed(1)}x</label>
+                   <input 
+                     type="range" 
+                     min="1" max="10" step="0.5" 
+                     value={customSpeed} 
+                     onChange={(e) => setCustomSpeed(parseFloat(e.target.value))} 
+                     className="w-24 accent-purple-500 cursor-pointer"
+                   />
+                </div>
+             )}
+          </div>
+          <div className="absolute bottom-4 left-4 z-30 text-white/50 text-[10px] uppercase font-mono tracking-widest font-bold hidden md:block">
+            Hints: {hintsEnabled ? "ON" : "OFF"} (Press H)
+          </div>
+        </>
+      )}
 
       {state.eraRenderData && (
           <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl px-8 flex flex-col items-center justify-center transition-all duration-[2000ms] ease-out pointer-events-none drop-shadow-2xl ${state.bannerVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
@@ -533,13 +733,32 @@ export default function GameCanvas() {
                 {Math.floor(gRef.current.score).toLocaleString()}
               </p>
               <div className="h-px bg-white/10 w-full my-4"></div>
-              <p className="text-xs text-gray-500 uppercase tracking-[0.2em] mb-1 font-semibold">Era Survived</p>
-              <p className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">
-                {state.eraRenderData?.name}
-              </p>
+              <div className="flex justify-between items-center text-left">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-[0.2em] mb-1 font-semibold">Era</p>
+                  <p className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">
+                    {state.eraRenderData?.name}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500 uppercase tracking-[0.2em] mb-1 font-semibold">Skill Level</p>
+                  <p className={`text-lg font-bold ${finalSkillInfo?.skill === 'PRO' ? 'text-red-500' : finalSkillInfo?.skill === 'INTERMEDIATE' ? 'text-yellow-400' : 'text-green-500'}`}>
+                    {finalSkillInfo?.skill || 'MEASURING...'}
+                  </p>
+                </div>
+              </div>
             </div>
+
+            {finalSkillInfo && (
+               <LoreCard 
+                 eraReached={finalSkillInfo.eraReached} 
+                 eraName={finalSkillInfo.eraName} 
+                 score={Math.floor(finalSkillInfo.score)} 
+                 skillLevel={finalSkillInfo.skill} 
+               />
+            )}
             
-            <div className="flex flex-col gap-3 w-full shrink-0">
+            <div className="flex flex-col gap-3 w-full shrink-0 mt-4">
                <h3 className="text-gray-400 font-semibold mb-1 uppercase text-xs tracking-widest text-center">Save YOUR SCORE</h3>
               <input 
                 type="text" 
