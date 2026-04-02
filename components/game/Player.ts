@@ -375,308 +375,301 @@ export class Player {
     ctx.restore();
   }
 
-    // ── MARIO ───────────────────────────────────────── (Refined Classic)
-    private drawMario(ctx: CanvasRenderingContext2D, frames: number) {
-        const u = this.width / 10;
-        const v = this.height / 16;
-        const stride = this.isGrounded ? Math.sin(frames * 0.25) * 1.5 : 1.5;
+  // ── MARIO ─────────────────────────────────────────
+  private drawMario(ctx: CanvasRenderingContext2D, frames: number) {
+    const u = this.width / 10;
+    const v = this.height / 16;
+    const stride = this.isGrounded ? Math.sin(frames * 0.25) * 1.5 : 1.5;
 
-        // Hair/Back of Head
-        ctx.fillStyle = '#5c3a21';
-        ctx.fillRect(1*u, 2.5*v, 7*u, 2*v);
+    // Hat with shade
+    ctx.fillStyle = '#e52521';
+    ctx.fillRect(2*u, 0, 6*u, 2*v);
+    ctx.fillStyle = '#b91c1c';
+    ctx.fillRect(1*u, 1.8*v, 8*u, 0.8*v);
+    ctx.fillStyle = '#e52521';
+    ctx.fillRect(1*u, 2*v, 8*u, 1*v);
 
-        // Hat (More structured)
-        ctx.fillStyle = '#e52521';
-        ctx.fillRect(2*u, 0, 6*u, 2*v);
-        ctx.fillRect(u, 1.8*v, 8.5*u, 1.2*v);
-        // Hat Logo (Simplified M)
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(4*u, 0.5*v, 2*u, 1*v);
-        ctx.fillStyle = '#e52521'; ctx.fillRect(4.8*u, 0.7*v, 0.4*u, 0.8*v);
+    // Hair / Sideburns
+    ctx.fillStyle = '#5c3a21';
+    ctx.fillRect(1.5*u, 3*v, 1*u, 2*v);
+    ctx.fillRect(7.5*u, 3*v, 1*u, 2*v);
 
-        // Face
-        ctx.fillStyle = '#ffcca6';
-        ctx.fillRect(2*u, 3*v, 6*u, 3.5*v);
-        
-        // Eyes (More expressive)
-        ctx.fillStyle = '#000';
-        ctx.fillRect(3.5*u, 3.8*v, 1*u, 1.2*v);
-        ctx.fillRect(6.5*u, 3.8*v, 1*u, 1.2*v);
+    // Face
+    ctx.fillStyle = '#ffcca6';
+    ctx.fillRect(2*u, 3*v, 6*u, 3.5*v);
 
-        // Nose
-        ctx.fillStyle = '#f0a07a';
-        ctx.fillRect(4.5*u, 5*v, 2*u, 1*v);
+    // Mustache
+    ctx.fillStyle = '#5c3a21';
+    ctx.fillRect(2.5*u, 5.2*v, 5*u, 0.8*v);
+    ctx.fillRect(1.5*u, 4.8*v, 1.5*u, 1.2*v);
 
-        // Mustache (Thicker)
-        ctx.fillStyle = '#442b1a';
-        ctx.fillRect(2*u, 5.5*v, 6.5*u, 1.5*v);
-        ctx.fillRect(1.5*u, 6.2*v, 1.5*u, 0.8*v);
+    // Eyes
+    ctx.fillStyle = '#000';
+    ctx.fillRect(3.2*u, 3.8*v, 1*u, 1.2*v);
+    ctx.fillRect(5.8*u, 3.8*v, 1*u, 1.2*v);
 
-        // Overalls
-        ctx.fillStyle = '#0043bb';
-        ctx.fillRect(2*u, 7*v, 6*u, 4.5*v);
-        // Straps
-        ctx.fillRect(2.8*u, 6.5*v, 1.2*u, 1.5*v);
-        ctx.fillRect(6*u, 6.5*v, 1.2*u, 1.5*v);
-        // Buttons
-        ctx.fillStyle = '#f6c90e';
-        ctx.fillRect(3*u, 8.5*v, u*0.8, u*0.8);
-        ctx.fillRect(6.2*u, 8.5*v, u*0.8, u*0.8);
+    // Overalls body
+    ctx.fillStyle = '#1e40af'; // Richer blue
+    ctx.fillRect(2.2*u, 6.5*v, 5.6*u, 5*v);
 
-        // Shirt
-        ctx.fillStyle = '#e52521';
-        ctx.fillRect(1*u, 7.5*v, 1.5*u, 2.5*v);
-        ctx.fillRect(7.5*u, 7.5*v, 1.5*u, 2.5*v);
+    // Yellow Buttons
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillRect(3.2*u, 7.5*v, 0.8*u, 0.8*v);
+    ctx.fillRect(6*u, 7.5*v, 0.8*u, 0.8*v);
 
-        // Hands (Gloves)
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0.5*u, 9.5*v, 2*u, 1.8*v);
-        ctx.fillRect(7.5*u, 9.5*v, 2*u, 1.8*v);
+    // Red shirt sleeves
+    ctx.fillStyle = '#e52521';
+    ctx.fillRect(0.5*u, 7*v, 2*u, 3*v);
+    ctx.fillRect(7.5*u, 7*v, 2*u, 3*v);
 
-        // Legs/Feet
-        ctx.fillStyle = '#0043bb';
-        ctx.fillRect((2 - stride)*u, 11.5*v, 2.2*u, 2.5*v);
-        ctx.fillRect((5.8 + stride)*u, 11.5*v, 2.2*u, 2.5*v);
-        
-        ctx.fillStyle = '#442b1a';
-        ctx.fillRect((1.5 - stride)*u, 14*v, 3.5*u, 2*v);
-        ctx.fillRect((5 + stride)*u, 14*v, 3.5*u, 2*v);
+    // Overall straps
+    ctx.fillStyle = '#1e3a8a';
+    ctx.fillRect(3.2*u, 6*v, 1.2*u, 1.5*v);
+    ctx.fillRect(5.6*u, 6*v, 1.2*u, 1.5*v);
+
+    // Hands
+    ctx.fillStyle = '#ffcca6';
+    ctx.fillRect(0, 9*v, 1.8*u, 1.8*v);
+    ctx.fillRect(8.2*u, 9*v, 1.8*u, 1.8*v);
+
+    // Legs
+    ctx.fillStyle = '#1e3a8a';
+    ctx.fillRect((2.2 - stride)*u, 11*v, 2.5*u, 3*v);
+    ctx.fillRect((5.3 + stride)*u, 11*v, 2.5*u, 3*v);
+
+    // Boots
+    ctx.fillStyle = '#451a03';
+    ctx.fillRect((1.8 - stride)*u, 13.8*v, 3.2*u, 2.2*v);
+    ctx.fillRect((5 + stride)*u, 13.8*v, 3.2*u, 2.2*v);
+  }
+
+  // ── BILL ──────────────────────────────────────────
+  private drawBill(ctx: CanvasRenderingContext2D, frames: number) {
+    const u = this.width / 10;
+    const v = this.height / 16;
+    const stride = this.isGrounded ? Math.sin(frames * 0.25) * 1.5 : 1.5;
+
+    // Hair shaded
+    ctx.fillStyle = '#451a03';
+    ctx.fillRect(2*u, 0, 6*u, 1.5*v);
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(2.5*u, 0.2*v, 5*u, 0.5*v);
+
+    // Face
+    ctx.fillStyle = '#ffcca6';
+    ctx.fillRect(2*u, 1.5*v, 6*u, 4.5*v);
+
+    // Glasses — with bridge
+    ctx.strokeStyle = '#111';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(2.5*u, 2.8*v, 2.2*u, 1.8*v);
+    ctx.strokeRect(5.3*u, 2.8*v, 2.2*u, 1.8*v);
+    ctx.beginPath(); ctx.moveTo(4.7*u, 3.5*v); ctx.lineTo(5.3*u, 3.5*v); ctx.stroke();
+    ctx.fillStyle = 'rgba(186, 230, 253, 0.4)';
+    ctx.fillRect(2.5*u, 2.8*v, 2.2*u, 1.8*v);
+    ctx.fillRect(5.3*u, 2.8*v, 2.2*u, 1.8*v);
+
+    // Smile
+    ctx.strokeStyle = '#c0835a';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(5*u, 5.2*v, 1.2*u, 0.2, Math.PI - 0.2); ctx.stroke();
+
+    // Suit jacket with lapels
+    ctx.fillStyle = '#1e3a8a';
+    ctx.fillRect(1*u, 6*v, 8*u, 5.5*v);
+    ctx.fillStyle = '#1e40af';
+    ctx.fillRect(1*u, 6*v, 2.5*u, 5*v);
+    ctx.fillRect(6.5*u, 6*v, 2.5*u, 5*v);
+
+    // White shirt collar
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.moveTo(4*u, 6*v); ctx.lineTo(6*u, 6*v); ctx.lineTo(5*u, 8*v); ctx.fill();
+    ctx.fillRect(4.2*u, 7*v, 1.6*u, 2*v);
+
+    // Rich blue tie
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(4.7*u, 6*v, 0.6*u, 4.5*v);
+    ctx.beginPath(); ctx.moveTo(4.7*u, 10.5*v); ctx.lineTo(5.3*u, 10.5*v); ctx.lineTo(5*u, 11*v); ctx.fill();
+
+    // Hands
+    ctx.fillStyle = '#ffcca6';
+    ctx.fillRect(0, 8.5*v, 1.8*u, 1.8*v);
+    ctx.fillRect(8.2*u, 8.5*v, 1.8*u, 1.8*v);
+
+    // Legs
+    ctx.fillStyle = '#172554';
+    ctx.fillRect((2.2 - stride)*u, 11.5*v, 2.5*u, 3*v);
+    ctx.fillRect((5.3 + stride)*u, 11.5*v, 2.5*u, 3*v);
+
+    // Polished Shoes
+    ctx.fillStyle = '#020617';
+    ctx.fillRect((1.8 - stride)*u, 14*v, 3.2*u, 2*v);
+    ctx.fillRect((5 + stride)*u, 14*v, 3.2*u, 2*v);
+  }
+
+  // ── ROBOT ─────────────────────────────────────────
+  private drawRobot(ctx: CanvasRenderingContext2D, frames: number) {
+    const u = this.width / 10;
+    const v = this.height / 16;
+  
+    // Head — metallic with panel lines
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(2*u, 0, 6*u, 5*v);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillRect(2.2*u, 0.2*v, 5.6*u, 1*v);
+  
+    // Eye screen
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(3*u, 1.5*v, 4*u, 2*v);
+    ctx.fillStyle = '#06b6d4';
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#06b6d4';
+    ctx.fillRect(3.5*u, 2*v, 3*u, 1*v);
+    ctx.shadowBlur = 0;
+  
+    // Antenna with signal pulse
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(4.8*u, -2.5*v, 0.4*u, 2.5*v);
+    const pulse = Math.sin(frames * 0.2) * 2;
+    ctx.fillStyle = '#f43f5e';
+    ctx.beginPath(); ctx.arc(5*u, -2.5*v, 1.5 + pulse, 0, Math.PI * 2); ctx.fill();
+  
+    // Body — armored suit
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(1.5*u, 5.5*v, 7*u, 5*v);
+    // Glowing circuit lines
+    ctx.strokeStyle = '#0ea5e9';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(2.5*u, 6*v); ctx.lineTo(2.5*u, 9*v); ctx.lineTo(4*u, 9*v); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(7.5*u, 6*v); ctx.lineTo(7.5*u, 9*v); ctx.lineTo(6*u, 9*v); ctx.stroke();
+  
+    // IEEE badge
+    ctx.fillStyle = '#eab308';
+    ctx.fillRect(4*u, 6.5*v, 2*u, 1.5*v);
+    ctx.fillStyle = '#000';
+    ctx.font = `bold ${u*1}px monospace`; ctx.fillText('CS', 4.1*u, 7.7*v);
+  
+    // Arms
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(0.2*u, 6*v, 1.5*u, 3*v);
+    ctx.fillRect(8.3*u, 6*v, 1.5*u, 3*v);
+  
+    // Hands — glow
+    ctx.fillStyle = (GAME_CONFIG as any).gravityEnabled ? '#64748b' : '#c084fc';
+    if (!(GAME_CONFIG as any).gravityEnabled) {
+      ctx.shadowBlur = 12; ctx.shadowColor = '#c084fc';
     }
+    ctx.beginPath(); ctx.arc(1*u, 9*v, 1.2*u, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(9*u, 9*v, 1.2*u, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+  
+    const stride = this.isGrounded ? Math.sin(frames * 0.25) * 1.5 : 1.5;
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect((2.2 - stride)*u, 11*v, 2.5*u, 3.5*v);
+    ctx.fillRect((5.3 + stride)*u, 11*v, 2.5*u, 3.5*v);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect((1.8 - stride)*u, 14*v, 3.2*u, 2*v);
+    ctx.fillRect((5 + stride)*u, 14*v, 3.2*u, 2*v);
+  }
 
-    // ── BILL ────────────────────────────────────────── (90s Executive)
-    private drawBill(ctx: CanvasRenderingContext2D, frames: number) {
-        const u = this.width / 10;
-        const v = this.height / 16;
-        const stride = this.isGrounded ? Math.sin(frames * 0.25) * 1.5 : 1.5;
+  // ── ADA ───────────────────────────────────────────
+  private drawAda(ctx: CanvasRenderingContext2D, frames: number) {
+    const u = this.width / 10;
+    const v = this.height / 16;
+    const stride = this.isGrounded ? Math.sin(frames * 0.25) * 0.8 : 0.8;
 
-        // Hair (Refined 90s floppy look)
-        ctx.fillStyle = '#442b1a';
-        ctx.fillRect(1.5*u, 0, 7*u, 2*v);
-        ctx.fillRect(1*u, 1*v, u, 2*v);
-        ctx.fillRect(8*u, 1*v, u, 2*v);
+    // Hair updo with details
+    ctx.fillStyle = '#1a0d0a';
+    ctx.fillRect(2*u, 0, 6*u, 2.5*v);
+    ctx.beginPath(); ctx.arc(5*u, 1.5*v, 3.5*u, Math.PI, 0); ctx.fill();
+    // Tiny ribbon
+    ctx.fillStyle = '#ec4899';
+    ctx.fillRect(4.5*u, 0, 1*u, 1*v);
 
-        // Face
-        ctx.fillStyle = '#ffcca6';
-        ctx.fillRect(2*u, 1.5*v, 6*u, 4.5*v);
+    // Face
+    ctx.fillStyle = '#f0c8a0';
+    ctx.fillRect(2.5*u, 2.5*v, 5*u, 4.5*v);
 
-        // Glasses (More refined metallic frames)
-        ctx.strokeStyle = '#333';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(2.5*u, 2.5*v, 2*u, 1.5*v);
-        ctx.strokeRect(5.5*u, 2.5*v, 2*u, 1.5*v);
-        ctx.fillStyle = 'rgba(100,200,255,0.2)';
-        ctx.fillRect(2.5*u, 2.5*v, 2*u, 1.5*v);
-        ctx.fillRect(5.5*u, 2.5*v, 2*u, 1.5*v);
-        // Golden glasses bridge
-        ctx.beginPath(); ctx.strokeStyle = '#DAA520'; ctx.moveTo(4.5*u, 3*v); ctx.lineTo(5.5*u, 3*v); ctx.stroke();
+    // Eyes with lashes
+    ctx.fillStyle = '#1a0d0a';
+    ctx.fillRect(3.5*u, 4*v, 1*u, 0.8*v);
+    ctx.fillRect(6*u, 4*v, 1*u, 0.8*v);
 
-        // Suit Jacket (Navy with shading)
-        ctx.fillStyle = '#1e3a5f';
-        ctx.fillRect(1*u, 6*v, 8*u, 5.5*v);
-        // Lapels
-        ctx.fillStyle = '#2c5282';
-        ctx.beginPath(); ctx.moveTo(4*u, 6*v); ctx.lineTo(3*u, 9*v); ctx.lineTo(4*u, 9*v); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(6*u, 6*v); ctx.lineTo(7*u, 9*v); ctx.lineTo(6*u, 9*v); ctx.fill();
+    // Victorian dress — top with lace
+    ctx.fillStyle = '#581c87';
+    ctx.fillRect(2*u, 7*v, 6*u, 4*v);
+    ctx.fillStyle = '#f5f5f5'; // white lace collar
+    ctx.fillRect(3.5*u, 7*v, 3*u, 0.5*v);
 
-        // White Shirt/Tie
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(4.2*u, 6*v, 1.6*u, 4.5*v);
-        ctx.fillStyle = '#2b6cb0'; // Tie
-        ctx.fillRect(4.6*u, 6.5*v, 0.8*u, 4*v);
+    // Dress — wide layered skirt
+    ctx.fillStyle = '#7c3aed';
+    ctx.beginPath();
+    ctx.moveTo(0*u, 11*v); ctx.lineTo(10*u, 11*v); 
+    ctx.lineTo(11*u, 16*v); ctx.lineTo(-1*u, 16*v); ctx.fill();
+    ctx.fillStyle = '#6d28d9'; // skirt shade
+    ctx.fillRect(1*u, 11*v, 1*u, 5*v); ctx.fillRect(8*u, 11*v, 1*u, 5*v);
 
-        // Sleeves/Hands
-        ctx.fillStyle = '#1e3a5f';
-        ctx.fillRect(0.5*u, 6*v, 1*u, 3*v);
-        ctx.fillRect(8.5*u, 6*v, 1*u, 3*v);
-        ctx.fillStyle = '#ffcca6';
-        ctx.fillRect(0.3*u, 8.5*v, 1.4*u, 1.5*v);
-        ctx.fillRect(8.3*u, 8.5*v, 1.4*u, 1.5*v);
+    // Scroll with text
+    ctx.fillStyle = '#feefc3';
+    ctx.fillRect(8.5*u, 7.5*v, 2.2*u, 4*v);
+    ctx.strokeStyle = '#92400e'; ctx.strokeRect(8.5*u, 7.5*v, 2.2*u, 4*v);
+    ctx.fillStyle = '#333'; ctx.font = `bold ${u*0.8}px serif`; ctx.fillText('ALG', 8.6*u, 10.2*v);
+  }
 
-        // Legs/Shoes
-        ctx.fillStyle = '#2c5282';
-        ctx.fillRect((2.2 - stride)*u, 11*v, 2.2*u, 3*v);
-        ctx.fillRect((5.6 + stride)*u, 11*v, 2.2*u, 3*v);
-        ctx.fillStyle = '#1a1a1a';
-        ctx.fillRect((1.8 - stride)*u, 14*v, 3*u, 2*v);
-        ctx.fillRect((5.2 + stride)*u, 14*v, 3*u, 2*v);
-    }
+  // ── LINUS ─────────────────────────────────────────
+  private drawLinus(ctx: CanvasRenderingContext2D, frames: number) {
+    const u = this.width / 10;
+    const v = this.height / 16;
+    const stride = this.isGrounded ? Math.sin(frames * 0.25) * 1.5 : 1.5;
 
-    // ── ROBOT R-80 ──────────────────────────────────── (IEEE Scientist)
-    private drawRobot(ctx: CanvasRenderingContext2D, frames: number) {
-        const u = this.width / 10;
-        const v = this.height / 16;
-        const stride = this.isGrounded ? Math.sin(frames * 0.25) * 1.5 : 1.5;
+    // Messy hair with highlights
+    ctx.fillStyle = '#111';
+    ctx.fillRect(1*u, 0, 8*u, 2.5*v);
+    ctx.fillStyle = '#2a2a2a';
+    ctx.fillRect(1.5*u, 0.5*v, 2*u, 0.5*v);
 
-        // Head (Metallic gradient)
-        ctx.fillStyle = '#cbd5e0';
-        ctx.fillRect(2.5*u, 0, 5*u, 4.5*v);
-        // Head shading
-        ctx.fillStyle = '#718096';
-        ctx.fillRect(2.5*u, 0, 0.5*u, 4.5*v);
-        ctx.fillRect(7*u, 0, 0.5*u, 4.5*v);
+    // Face
+    ctx.fillStyle = '#ffcca6';
+    ctx.fillRect(2*u, 2*v, 6*u, 4.5*v);
 
-        // Screen Face
-        ctx.fillStyle = '#1a202c';
-        ctx.fillRect(3.2*u, 1*v, 3.6*u, 2.5*v);
-        // Digital Eyes (Scanning effect)
-        ctx.fillStyle = '#00ffff';
-        const scan = Math.sin(frames * 0.1) * 0.5 + 0.5;
-        ctx.fillRect(3.8*u, 1.8*v, 0.8*u, 0.8*v);
-        ctx.fillRect(5.4*u, 1.8*v, 0.8*u, 0.8*v);
-        ctx.globalAlpha = scan; ctx.fillRect(3.5*u, 1.4*v, 3*u, 0.2*v); ctx.globalAlpha = 1.0;
+    // Glasses and Beard
+    ctx.strokeStyle = '#333'; ctx.strokeRect(2.8*u, 3.2*v, 1.8*u, 1.2*v); ctx.strokeRect(5.4*u, 3.2*v, 1.8*u, 1.2*v);
+    ctx.fillStyle = '#27272a';
+    ctx.fillRect(2*u, 5.5*v, 6*u, 1.5*v);
 
-        // Antennas
-        ctx.strokeStyle = '#4a5568'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(3*u, 0); ctx.lineTo(2*u, -1.5*v); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(7*u, 0); ctx.lineTo(8*u, -1.5*v); ctx.stroke();
-        ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.arc(2*u, -1.5*v, 2, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#00ff00'; ctx.beginPath(); ctx.arc(8*u, -1.5*v, 2, 0, Math.PI*2); ctx.fill();
+    // Hoodie with drawstrings
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(1*u, 6.5*v, 8*u, 6*v);
+    ctx.fillStyle = '#334155'; // hood shadow
+    ctx.fillRect(1*u, 6.5*v, 8*u, 1.2*v);
+    ctx.fillStyle = '#f1f5f9'; // strings
+    ctx.fillRect(4.2*u, 7.5*v, 0.2*u, 2*v);
+    ctx.fillRect(5.6*u, 7.5*v, 0.2*u, 2*v);
 
-        // Body (Mechanical)
-        ctx.fillStyle = '#a0aec0';
-        ctx.fillRect(2*u, 5*v, 6*u, 5.5*v);
-        // Chest Plate (IEEE Logo Style)
-        ctx.fillStyle = '#2c5282';
-        ctx.fillRect(3.5*u, 6.2*v, 3*u, 3*v);
-        ctx.fillStyle = '#ffffff'; ctx.font = `bold ${u*0.8}px sans-serif`; ctx.fillText('IEEE', 3.8*u, 8.2*v);
+    // Linux text glowing
+    ctx.fillStyle = '#fbbf24';
+    ctx.shadowBlur = 4; ctx.shadowColor = '#fbbf24';
+    ctx.font = `bold ${u*1.2}px font-mono`;
+    ctx.fillText('LINUX', 2.3*u, 11*v);
+    ctx.shadowBlur = 0;
 
-        // Arms (Piston Style)
-        ctx.fillStyle = '#718096';
-        ctx.fillRect(1*u, 5.5*v, 1*u, 3.5*v);
-        ctx.fillRect(8*u, 5.5*v, 1*u, 3.5*v);
-        
-        // Hands — glowing when flying
-        ctx.fillStyle = (GAME_CONFIG as any).gravityEnabled ? '#4a5568' : '#a855f7';
-        if (!(GAME_CONFIG as any).gravityEnabled) {
-          ctx.shadowBlur = 10;
-          ctx.shadowColor = '#a855f7';
-        }
-        ctx.beginPath(); ctx.arc(1*u, 8*v, 1.2*u, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(9*u, 8*v, 1.2*u, 0, Math.PI*2); ctx.fill();
-        ctx.shadowBlur = 0;
+    // Hands
+    ctx.fillStyle = '#ffcca6';
+    ctx.fillRect(0, 9*v, 1.8*u, 1.8*v);
+    ctx.fillRect(8.2*u, 9*v, 1.8*u, 1.8*v);
 
-        // Legs/Tracks
-        ctx.fillStyle = '#2d3748';
-        ctx.fillRect((2.2 - stride)*u, 11*v, 2.5*u, 3.5*v);
-        ctx.fillRect((5.3 + stride)*u, 11*v, 2.5*u, 3.5*v);
-        // Wheels
-        ctx.fillStyle = '#1a202c';
-        ctx.beginPath(); ctx.arc((3.4 - stride)*u, 14.5*v, 1.2*u, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc((6.5 + stride)*u, 14.5*v, 1.2*u, 0, Math.PI*2); ctx.fill();
+    // Jeans
+    ctx.fillStyle = '#1d4ed8';
+    ctx.fillRect((2.2 - stride)*u, 12*v, 2.5*u, 3*v);
+    ctx.fillRect((5.3 + stride)*u, 12*v, 2.5*u, 3*v);
 
-        // Jet pack glow when gravity OFF
-        if (!(GAME_CONFIG as any).gravityEnabled) {
-          ctx.fillStyle = '#7c3aed';
-          ctx.shadowBlur = 15;
-          ctx.shadowColor = '#7c3aed';
-          ctx.fillRect(3*u, 9*v, 1.5*u, 2*v);
-          ctx.fillRect(5.5*u, 9*v, 1.5*u, 2*v);
-          ctx.shadowBlur = 0;
-        }
-    }
-
-    // ── ADA ─────────────────────────────────────────── (Victorian Pioneer)
-    private drawAda(ctx: CanvasRenderingContext2D, frames: number) {
-        const u = this.width / 10;
-        const v = this.height / 16;
-        const stride = this.isGrounded ? Math.sin(frames * 0.25) * 0.8 : 0.8;
-
-        // Hair (Intricate Victorian Updo)
-        ctx.fillStyle = '#2c1810';
-        ctx.beginPath(); ctx.ellipse(5*u, 2*v, 3.5*u, 2.5*v, 0, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(2.5*u, 3*v, 1.2*u, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(7.5*u, 3*v, 1.2*u, 0, Math.PI*2); ctx.fill();
-
-        // Face
-        ctx.fillStyle = '#f0c8a0';
-        ctx.fillRect(3*u, 2*v, 4*u, 4.5*v);
-
-        // Eyes
-        ctx.fillStyle = '#1a0b05';
-        ctx.fillRect(3.8*u, 3.5*v, 0.8*u, 0.8*v);
-        ctx.fillRect(5.4*u, 3.5*v, 0.8*u, 0.8*v);
-
-        // Dress (Regal Purple with Frills)
-        ctx.fillStyle = '#44337a';
-        ctx.fillRect(2.5*u, 6.5*v, 5*u, 4*v);
-        // Frill detail
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(3*u, 6.5*v, 4*u, 0.6*v);
-
-        // Bell Skirt
-        ctx.fillStyle = '#553c9a';
-        ctx.beginPath(); ctx.moveTo(2.5*u, 10.5*v); ctx.lineTo(7.5*u, 10.5*v); ctx.lineTo(9.5*u, 16*v); ctx.lineTo(0.5*u, 16*v); ctx.fill();
-        // Skirt Pattern
-        ctx.strokeStyle = '#44337a'; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(3*u, 11*v); ctx.lineTo(2*u, 15*v); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(7*u, 11*v); ctx.lineTo(8*u, 15*v); ctx.stroke();
-
-        // Arms/Hands (Holding Parchment)
-        ctx.fillStyle = '#f0c8a0';
-        ctx.fillRect(1.5*u, 7*v, 1.2*u, 2.5*v);
-        ctx.fillRect(7.3*u, 7*v, 1.2*u, 2.5*v);
-
-        // The Analytical Engine Note (Parchment)
-        ctx.fillStyle = '#fef3c7';
-        ctx.fillRect(7.5*u, 8*v, 2.5*u, 3.5*v);
-        ctx.strokeStyle = '#d97706'; ctx.strokeRect(7.5*u, 8*v, 2.5*u, 3.5*v);
-        ctx.fillStyle = '#333'; ctx.font = `${u*0.8}px serif`; ctx.fillText('Σ', 8*u, 10*v);
-    }
-
-    // ── LINUS ───────────────────────────────────────── (Hacker Icon)
-    private drawLinus(ctx: CanvasRenderingContext2D, frames: number) {
-        const u = this.width / 10;
-        const v = this.height / 16;
-        const stride = this.isGrounded ? Math.sin(frames * 0.25) * 1.5 : 1.5;
-
-        // Messy Hacker Hair
-        ctx.fillStyle = '#1a1a1a';
-        ctx.fillRect(1.5*u, 0, 7.5*u, 2.5*v);
-        ctx.fillRect(1*u, 1*v, 1.2*u, 3*v); // Strands
-        ctx.fillRect(8*u, 1*v, 1.2*u, 3*v);
-
-        // Face
-        ctx.fillStyle = '#ffcca6';
-        ctx.fillRect(2*u, 2.5*v, 6*u, 3.8*v);
-        
-        // Determination Eyes
-        ctx.fillStyle = '#000';
-        ctx.fillRect(3.2*u, 3.8*v, 1.2*u, 1*v);
-        ctx.fillRect(6.2*u, 3.8*v, 1.2*u, 1*v);
-
-        // Dark Hoodie
-        ctx.fillStyle = '#2d3748';
-        ctx.fillRect(1*u, 6.5*v, 8*u, 5*v);
-        // Hoodie Strings
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(4.8*u, 6.5*v, 0.2*u, 2.5*v);
-        ctx.fillRect(5.4*u, 6.5*v, 0.2*u, 2.5*v);
-
-        // Tux Penguin Patch (Abstract)
-        ctx.fillStyle = '#ffffff'; ctx.fillRect(4*u, 8*v, 2.5*u, 2.3*v);
-        ctx.fillStyle = '#1a1a1a'; ctx.fillRect(4.5*u, 8.2*v, 1.5*u, 1*v);
-        ctx.fillStyle = '#f6c90e'; ctx.fillRect(5*u, 9.5*v, 0.6*u, 0.5*v);
-
-        // Arms/Hands
-        ctx.fillStyle = '#2d3748';
-        ctx.fillRect(0.2*u, 7*v, 1.2*u, 3*v);
-        ctx.fillRect(8.6*u, 7*v, 1.2*u, 3*v);
-        ctx.fillStyle = '#ffcca6';
-        ctx.fillRect(0*u, 9.5*v, 1.4*u, 1.4*v);
-        ctx.fillRect(8.6*u, 9.5*v, 1.4*u, 1.4*v);
-
-        // Denim Jeans (Refined shading)
-        ctx.fillStyle = '#2b4490';
-        ctx.fillRect((2.2 - stride)*u, 11.5*v, 2.3*u, 3*v);
-        ctx.fillRect((5.5 + stride)*u, 11.5*v, 2.3*u, 3*v);
-        
-        // Sneakers (Modern red/white)
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect((1.8 - stride)*u, 14.5*v, 3.2*u, 1.5*v);
-        ctx.fillRect((5 + stride)*u, 14.5*v, 3.2*u, 1.5*v);
-        ctx.fillStyle = '#e52521';
-        ctx.fillRect((1.8 - stride)*u, 15.2*v, 3.2*u, 0.8*v);
-        ctx.fillRect((5 + stride)*u, 15.2*v, 3.2*u, 0.8*v);
-    }
+    // Premium Sneakers
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect((1.8 - stride)*u, 14.5*v, 3.2*u, 2*v);
+    ctx.fillRect((5 + stride)*u, 14.5*v, 3.2*u, 2*v);
+    ctx.fillStyle = '#ef4444'; // sneaker accent
+    ctx.fillRect((1.8 - stride)*u, 15.5*v, 3.2*u, 0.5*v);
+    ctx.fillRect((5 + stride)*u, 15.5*v, 3.2*u, 0.5*v);
+  }
 }
 
