@@ -1,8 +1,8 @@
 export const GAME_CONFIG = {
-  // Physics — tuned for a fair, responsive feel
-  gravity: 0.55,
-  jumpForce: -10.5,
-  doubleJumpForce: -9,
+  // Physics — tuned for higher jumping and better obstacle clearance
+  gravity: 0.45,
+  jumpForce: -12.5,
+  doubleJumpForce: -10.5,
   baseSpeed: 2.8,
   playerSpeed: 4.5,
   groundHeightRatio: 0.18,
