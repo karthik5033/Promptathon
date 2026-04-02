@@ -1,9 +1,12 @@
 import { useEffect, useRef } from "react";
 
-export function useKeyboard(toggleGravity?: () => void) {
+import { GAME_CONFIG } from '@/lib/gameConfig';
+
+export function useKeyboard() {
   const keysRef = useRef<{ [key: string]: boolean }>({
     Space: false,
     ArrowUp: false,
+    ArrowDown: false,
     ArrowLeft: false,
     ArrowRight: false,
     KeyH: false,
@@ -25,9 +28,8 @@ export function useKeyboard(toggleGravity?: () => void) {
         }
       }
 
-      if (e.code === 'KeyG' && toggleGravity && !keysRef.current._gConsumed) {
-        keysRef.current._gConsumed = true;
-        toggleGravity();
+      if (e.code === 'KeyG' && !e.repeat) {
+        (GAME_CONFIG as any).gravityEnabled = !(GAME_CONFIG as any).gravityEnabled;
       }
 
       keysRef.current[e.code] = true;

@@ -1,9 +1,21 @@
-export interface HUDProps {
-  gravityOn?: boolean;
-  toggleGravity?: () => void;
-}
+import { useState, useEffect } from 'react';
+import { GAME_CONFIG } from '@/lib/gameConfig';
 
-export function HUD({ gravityOn = true, toggleGravity }: HUDProps) {
+export function HUD() {
+  const [gravityOn, setGravityOn] = useState((GAME_CONFIG as any).gravityEnabled);
+
+  // Keep HUD button synced with keyboard toggles too
+  useEffect(() => {
+    const i = setInterval(() => setGravityOn((GAME_CONFIG as any).gravityEnabled), 50);
+    return () => clearInterval(i);
+  }, []);
+
+  function toggleGravity() {
+    const newState = !(GAME_CONFIG as any).gravityEnabled;
+    (GAME_CONFIG as any).gravityEnabled = newState;
+    setGravityOn(newState);
+  }
+
   return (
     <div className="absolute top-0 left-0 w-full pointer-events-none z-20 font-mono" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.7)' }}>
       <div className="flex justify-between items-start p-4 md:p-6">
@@ -50,23 +62,22 @@ export function HUD({ gravityOn = true, toggleGravity }: HUDProps) {
           </div>
         </div>
       </div>
-      {toggleGravity && (
-        <button
-          onClick={toggleGravity}
-          style={{ pointerEvents: 'auto' }}
-          className={`
-            fixed bottom-6 left-1/2 -translate-x-1/2
-            px-6 py-2 rounded-full font-mono font-bold text-sm
-            border-2 transition-all duration-300 z-50
-            ${gravityOn 
-              ? 'bg-blue-900 border-blue-400 text-blue-200 shadow-blue-500/50 shadow-lg' 
-              : 'bg-orange-900 border-orange-400 text-orange-200 shadow-orange-500/50 shadow-lg animate-pulse'
-            }
-          `}
-        >
-          {gravityOn ? '🌍 GRAVITY: ON' : '🚀 GRAVITY: OFF'}
-        </button>
-      )}
+      <button
+        onClick={toggleGravity}
+        style={{ pointerEvents: 'auto' }}
+        className={`
+          fixed bottom-8 left-1/2 -translate-x-1/2
+          px-8 py-3 rounded-full font-mono font-bold text-base
+          border-2 transition-all duration-200 z-50 select-none
+          min-w-[180px] min-h-[48px]
+          ${gravityOn
+            ? 'bg-blue-950 border-blue-400 text-blue-200 shadow-lg shadow-blue-500/30'
+            : 'bg-purple-950 border-purple-400 text-purple-200 shadow-lg shadow-purple-500/50 animate-pulse'
+          }
+        `}
+      >
+        {gravityOn ? '🌍 GRAVITY: ON' : '🚀 FLYING MODE'}
+      </button>
     </div>
   );
 }

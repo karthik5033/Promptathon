@@ -75,21 +75,10 @@ export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [state, dispatch] = useReducer(gameReducer, initialState);
   
-  const [gravityToggleMsg, setGravityToggleMsg] = useState<{ text: string, color: string, id: number } | null>(null);
-  const [gravityToggleFade, setGravityToggleFade] = useState(false);
+  const flyingModeTextRef = useRef({ alpha: 0, message: '' });
+  const prevGravityRef = useRef((GAME_CONFIG as any).gravityEnabled);
   
-  const toggleGravityCallback = () => {
-     dispatch({ type: 'TOGGLE_GRAVITY' });
-     const willBeGravityOn = !state.gravityEnabled;
-     setGravityToggleMsg({
-        text: willBeGravityOn ? "GRAVITY RESTORED" : "ZERO-G MODE",
-        color: willBeGravityOn ? "text-blue-400" : "text-purple-400",
-        id: Date.now()
-     });
-     setGravityToggleFade(false);
-  };
-  
-  const keys = useKeyboard(toggleGravityCallback);
+  const keys = useKeyboard();
   const router = useRouter();
 
   const gRef = useRef({
@@ -139,13 +128,21 @@ export default function GameCanvas() {
   useEffect(() => { speedModeRef.current = speedMode; }, [speedMode]);
   useEffect(() => { customSpeedRef.current = customSpeed; }, [customSpeed]);
 
+  const bgmRef = useRef<HTMLAudioElement | null>(null);
+
   useEffect(() => {
-    if (gravityToggleMsg) {
-       const t1 = setTimeout(() => setGravityToggleFade(true), 50);
-       const t2 = setTimeout(() => setGravityToggleMsg(null), 1500);
-       return () => { clearTimeout(t1); clearTimeout(t2); };
+    bgmRef.current = new Audio('/blinding-lights.mp3');
+    bgmRef.current.loop = true;
+    bgmRef.current.volume = 0.35; 
+  }, []);
+
+  useEffect(() => {
+    if (state.status === 'PLAYING') {
+       bgmRef.current?.play().catch(e => console.log('BGM play prevented:', e));
+    } else {
+       bgmRef.current?.pause();
     }
-  }, [gravityToggleMsg]);
+  }, [state.status]);
 
   useEffect(() => {
     dispatch({ type: 'START' });
@@ -460,6 +457,18 @@ export default function GameCanvas() {
     ctx.fillRect(0, groundY, canvas.width, 3);
     ctx.shadowBlur = 0;
 
+    if (!(GAME_CONFIG as any).gravityEnabled) {
+      const gradient = ctx.createRadialGradient(
+        canvas.width/2, canvas.height/2, canvas.height * 0.3,
+        canvas.width/2, canvas.height/2, canvas.height * 0.9
+      );
+      gradient.addColorStop(0, 'rgba(0,0,0,0)');
+      gradient.addColorStop(1, 'rgba(120, 0, 255, 0.15)');
+      
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
     if (playerRef.current) {
         ctx.save();
         let p = playerRef.current;
@@ -582,34 +591,26 @@ export default function GameCanvas() {
              const rect = canvas.getBoundingClientRect();
              setPlayerCanvasPos({ x: playerRef.current.x + rect.left + playerRef.current.width/2, y: playerRef.current.y + rect.top });
           }
+      }
 
-          if (!state.gravityEnabled && g.frames % 5 === 0) {
-             particlesRef.current.push(new Particle(
-                playerRef.current.x + playerRef.current.width/2,
-                playerRef.current.y + playerRef.current.height/2,
-                (Math.random() - 0.5) * 2,
-                -0.5,
-                Math.random() * 2 + 1,
-                'rgba(150, 100, 255, 0.6)'
-             ));
-          }
+      if (prevGravityRef.current !== (GAME_CONFIG as any).gravityEnabled) {
+         flyingModeTextRef.current.alpha = 1.0;
+         flyingModeTextRef.current.message = (GAME_CONFIG as any).gravityEnabled ? 'GRAVITY RESTORED' : 'FLYING MODE ACTIVATED';
+         prevGravityRef.current = (GAME_CONFIG as any).gravityEnabled;
+      }
 
-          if (!state.gravityEnabled) {
-             ctx.save();
-             ctx.shadowBlur = 20;
-             ctx.shadowColor = '#a855f7';
-             ctx.strokeStyle = 'rgba(168, 85, 247, 0.4)';
-             ctx.lineWidth = 2;
-             ctx.beginPath();
-             ctx.arc(
-               playerRef.current.x + playerRef.current.width/2,
-               playerRef.current.y + playerRef.current.height/2,
-               playerRef.current.width * 0.9,
-               0, Math.PI * 2
-             );
-             ctx.stroke();
-             ctx.restore();
-          }
+      const fm = flyingModeTextRef.current;
+      if (fm.alpha > 0) {
+        ctx.save();
+        ctx.globalAlpha = fm.alpha;
+        ctx.fillStyle = (GAME_CONFIG as any).gravityEnabled ? '#60a5fa' : '#c084fc';
+        ctx.font = 'bold 28px monospace';
+        ctx.textAlign = 'center';
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = (GAME_CONFIG as any).gravityEnabled ? '#3b82f6' : '#a855f7';
+        ctx.fillText(fm.message, canvas.width/2, canvas.height/2 - 40);
+        ctx.restore();
+        fm.alpha -= 0.015;
       }
     }
   }, state.status === 'PLAYING');
@@ -647,23 +648,10 @@ export default function GameCanvas() {
     <div className="relative w-full h-full overflow-hidden bg-black font-sans selection:bg-purple-500/30">
       <canvas ref={canvasRef} className="block w-full h-full" />
       <HintOverlay urgency={hintUrgency} playerPos={playerCanvasPos} enabled={hintsEnabled && state.status === 'PLAYING'} />
-      
-      {gravityToggleMsg && (
-        <div 
-           key={gravityToggleMsg.id} 
-           className={`absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none ${gravityToggleMsg.color} font-black text-4xl md:text-5xl tracking-[0.2em] font-mono transition-opacity duration-[1500ms] ease-out`}
-           style={{
-             textShadow: '0 0 15px currentColor',
-             opacity: gravityToggleFade ? 0 : 1
-           }}
-        >
-          {gravityToggleMsg.text}
-        </div>
-      )}
 
       {state.status === 'PLAYING' && state.eraRenderData && (
         <>
-          <HUD gravityOn={state.gravityEnabled} toggleGravity={toggleGravityCallback} />
+          <HUD />
           <div className="absolute top-4 right-4 z-30 flex flex-col items-end gap-2 p-3 bg-black/60 backdrop-blur-md border border-white/20 rounded-xl shadow-lg">
              <div className="flex bg-gray-800 rounded-lg overflow-hidden">
                 <button 

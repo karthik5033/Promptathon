@@ -1,6 +1,7 @@
 export const GAME_CONFIG = {
   gravityEnabled: true,
   zeroGravityFloat: 0.02,
+  flySpeed: 6,
   // Physics — tuned for higher jumping and better obstacle clearance
   gravity: 0.35,
   jumpForce: -13.8,
