@@ -120,16 +120,17 @@ export class Player {
       this.x += GAME_CONFIG.playerSpeed;
     }
 
-    // Gravity
+    // Gravity and Vertical Action
     if ((GAME_CONFIG as any).gravityEnabled) {
       this.vy += GAME_CONFIG.gravity;
     } else {
-      this.vy += (GAME_CONFIG as any).zeroGravityFloat;
-      this.vy *= 0.92;
-    }
-
-    if (!(GAME_CONFIG as any).gravityEnabled && this.vy < -18) {
-      this.vy = -18;
+      if (keys.Space || keys.ArrowUp) {
+        this.vy = -(GAME_CONFIG as any).flySpeed;
+      } else if (keys.ArrowDown) {
+        this.vy = (GAME_CONFIG as any).flySpeed;
+      } else {
+        this.vy = 0;
+      }
     }
 
     this.y += this.vy;
@@ -180,6 +181,16 @@ export class Player {
       this.y = absoluteGroundY - this.height;
       this.vy = 0;
       this.isGrounded = true;
+    } else {
+      if ((GAME_CONFIG as any).gravityEnabled && !standingOnPlatform) {
+        this.isGrounded = false;
+      }
+    }
+    
+    // Ceiling boundary
+    if (this.y < 0) {
+      this.y = 0;
+      this.vy = 0;
     }
 
     if (this.isGrounded) {
@@ -188,43 +199,46 @@ export class Player {
     }
 
     // Jump logic
-    if ((keys.Space || keys.ArrowUp) && !isDucking) {
-      if (this.isGrounded) {
-        this.vy = GAME_CONFIG.jumpForce;
-        this.isGrounded = false;
-        this.canDoubleJump = true;
-        this.hasDoubleJumped = false;
+    if ((GAME_CONFIG as any).gravityEnabled) {
+      // Normal jump — only when grounded
+      if ((keys.Space || keys.ArrowUp) && !isDucking) {
+        if (this.isGrounded) {
+          this.vy = GAME_CONFIG.jumpForce;
+          this.isGrounded = false;
+          this.canDoubleJump = true;
+          this.hasDoubleJumped = false;
 
-        for (let i = 0; i < 8; i++) {
-          particles.push(new Particle(
-            this.x + this.width / 2 + (Math.random() * 16 - 8),
-            floorY,
-            -Math.random() * 2 - 1,
-            -Math.random() * 2.5,
-            Math.random() * 3 + 2,
-            'rgba(236, 240, 241, 0.6)'
-          ));
-        }
-      } else if (this.canDoubleJump && !this.hasDoubleJumped && !keys._jumpConsumed) {
-        this.vy = GAME_CONFIG.doubleJumpForce;
-        this.hasDoubleJumped = true;
-        keys._jumpConsumed = true;
+          for (let i = 0; i < 8; i++) {
+            particles.push(new Particle(
+              this.x + this.width / 2 + (Math.random() * 16 - 8),
+              floorY,
+              -Math.random() * 2 - 1,
+              -Math.random() * 2.5,
+              Math.random() * 3 + 2,
+              'rgba(236, 240, 241, 0.6)'
+            ));
+          }
+        } else if (this.canDoubleJump && !this.hasDoubleJumped && !keys._jumpConsumed) {
+          this.vy = GAME_CONFIG.doubleJumpForce;
+          this.hasDoubleJumped = true;
+          keys._jumpConsumed = true;
 
-        for (let i = 0; i < 12; i++) {
-          const angle = (Math.PI * 2 / 12) * i;
-          particles.push(new Particle(
-            this.x + this.width / 2,
-            this.y + this.height / 2,
-            Math.cos(angle) * 3,
-            Math.sin(angle) * 3,
-            Math.random() * 3 + 2,
-            `hsla(${Math.random() * 60 + 180}, 100%, 70%, 0.8)`
-          ));
+          for (let i = 0; i < 12; i++) {
+            const angle = (Math.PI * 2 / 12) * i;
+            particles.push(new Particle(
+              this.x + this.width / 2,
+              this.y + this.height / 2,
+              Math.cos(angle) * 3,
+              Math.sin(angle) * 3,
+              Math.random() * 3 + 2,
+              `hsla(${Math.random() * 60 + 180}, 100%, 70%, 0.8)`
+            ));
+          }
         }
       }
-    }
-    if (!keys.Space && !keys.ArrowUp) {
-      keys._jumpConsumed = false;
+      if (!keys.Space && !keys.ArrowUp) {
+        keys._jumpConsumed = false;
+      }
     }
 
     // Dust particles
@@ -256,7 +270,41 @@ export class Player {
       if (this.invincibleTimer <= 0) this.isInvincible = false;
     }
 
-    if (!this.isGrounded && frames % 3 === 0) {
+    if (!(GAME_CONFIG as any).gravityEnabled) {
+      // Left thruster trail
+      particles.push(new Particle(
+        this.x - 4,
+        this.y + this.height * 0.5 + (Math.random() * 10 - 5),
+        -(Math.random() * 3 + 2),
+        (Math.random() - 0.5) * 1.5,
+        Math.random() * 4 + 2,
+        `hsl(${Math.random() * 60 + 200}, 100%, 70%)`
+      ));
+
+      if (keys.ArrowUp || keys.Space) {
+        // Bottom thruster
+        particles.push(new Particle(
+          this.x + this.width * 0.5 + (Math.random() * 10 - 5),
+          this.y + this.height + 2,
+          (Math.random() - 0.5) * 1.5,
+          Math.random() * 3 + 2,
+          Math.random() * 4 + 3,
+          `hsl(${Math.random() * 40 + 20}, 100%, 65%)`
+        ));
+      }
+
+      if (keys.ArrowDown) {
+        // Top thruster
+        particles.push(new Particle(
+          this.x + this.width * 0.5 + (Math.random() * 10 - 5),
+          this.y - 2,
+          (Math.random() - 0.5) * 1.5,
+          -(Math.random() * 3 + 2),
+          Math.random() * 4 + 3,
+          `hsl(${Math.random() * 40 + 20}, 100%, 65%)`
+        ));
+      }
+    } else if (!this.isGrounded && frames % 3 === 0) {
       particles.push(new Particle(
         this.x + this.width / 2 + (Math.random() * 6 - 3),
         this.y + this.height,
@@ -270,7 +318,15 @@ export class Player {
 
   draw(ctx: CanvasRenderingContext2D, frames: number, speed: number) {
     ctx.save();
-    ctx.translate(this.x, this.y);
+    ctx.translate(this.x + this.width/2, this.y + this.height/2);
+    
+    if (!(GAME_CONFIG as any).gravityEnabled) {
+      // Tilt up when flying up, tilt down when flying down
+      const tilt = this.vy * 0.05;   // subtle rotation
+      ctx.rotate(tilt);
+    }
+    
+    ctx.translate(-this.width/2, -this.height/2);
 
     if (this.isInvincible && frames % 4 < 2) {
       ctx.globalAlpha = 0.4;
@@ -279,46 +335,83 @@ export class Player {
     const bounceY = this.isGrounded ? Math.abs(Math.sin(frames * 0.15)) * 3 : 0;
     ctx.translate(0, -bounceY);
 
-    const u = this.width / 12;
+    const u = this.width / 10;
     const v = this.height / 16;
-    const R = '#e52521';
-    const BL = '#0043bb';
-    const P = '#ffcca6';
-    const BR = '#5c3a21';
-    const Y = '#fdf104';
-
-    ctx.fillStyle = R;
-    ctx.fillRect(3 * u, 0 * v, 5 * u, 2 * v);
-    ctx.fillRect(2 * u, 2 * v, 9 * u, 1 * v);
-    ctx.fillStyle = BR;
-    ctx.fillRect(2 * u, 3 * v, 3 * u, 3 * v);
-    ctx.fillRect(1 * u, 4 * v, 1 * u, 3 * v);
-    ctx.fillStyle = P;
-    ctx.fillRect(5 * u, 3 * v, 4 * u, 4 * v);
-    ctx.fillRect(9 * u, 4 * v, 2 * u, 2 * v);
-    ctx.fillRect(3 * u, 6 * v, 6 * u, 1 * v);
-    ctx.fillStyle = BR;
-    ctx.fillRect(7 * u, 3 * v, 1 * u, 2 * v);
-    ctx.fillRect(7 * u, 5 * v, 4 * u, 1 * v);
-    ctx.fillStyle = R;
-    ctx.fillRect(2 * u, 7 * v, 3 * u, 4 * v);
-    ctx.fillRect(7 * u, 7 * v, 3 * u, 4 * v);
-    ctx.fillRect(4 * u, 7 * v, 4 * u, 2 * v);
-    ctx.fillStyle = BL;
-    ctx.fillRect(4 * u, 9 * v, 4 * u, 4 * v);
-    ctx.fillRect(3 * u, 8 * v, 1 * u, 3 * v);
-    ctx.fillRect(8 * u, 8 * v, 1 * u, 3 * v);
-    ctx.fillStyle = Y;
-    ctx.fillRect(3 * u, 10 * v, 1 * u, 1 * v);
-    ctx.fillRect(8 * u, 10 * v, 1 * u, 1 * v);
-    ctx.fillStyle = P;
-    ctx.fillRect(1 * u, 9 * v, 2 * u, 2 * v);
-    ctx.fillRect(9 * u, 9 * v, 2 * u, 2 * v);
-    
-    ctx.fillStyle = BR;
-    const stride = this.isGrounded ? Math.sin(frames * 0.15) * 2 : 2;
-    ctx.fillRect((3 - stride) * u, 13 * v, 3 * u, 2 * v);
-    ctx.fillRect((6 + stride) * u, 13 * v, 3 * u, 2 * v);
+  
+    // Head — metallic box
+    ctx.fillStyle = '#b0c4de';
+    ctx.fillRect(2*u, 0*v, 6*u, 5*v);
+  
+    // Visor / eye screen
+    ctx.fillStyle = '#00ffff';
+    ctx.fillRect(3*u, 1*v, 4*u, 2*v);
+    // Visor glow
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#00ffff';
+    ctx.fillRect(3*u, 1*v, 4*u, 2*v);
+    ctx.shadowBlur = 0;
+  
+    // Antenna
+    ctx.fillStyle = '#888';
+    ctx.fillRect(5*u, -2*v, 1*u, 2*v);
+    ctx.fillStyle = '#ff0000';
+    ctx.beginPath();
+    ctx.arc(5.5*u, -2*v, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  
+    // Body — suit
+    ctx.fillStyle = '#4a5568';
+    ctx.fillRect(2*u, 5*v, 6*u, 5*v);
+  
+    // IEEE badge on chest
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(3*u, 6*v, 3*u, 2*v);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.font = `${u*1.2}px monospace`;
+    ctx.fillText('80', 3.2*u, 7.6*v);
+  
+    // Arms
+    ctx.fillStyle = '#b0c4de';
+    ctx.fillRect(0*u, 5*v, 2*u, 3*v);
+    ctx.fillRect(8*u, 5*v, 2*u, 3*v);
+  
+    // Hands — glowing when flying
+    ctx.fillStyle = (GAME_CONFIG as any).gravityEnabled ? '#888' : '#a855f7';
+    if (!(GAME_CONFIG as any).gravityEnabled) {
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#a855f7';
+    }
+    ctx.beginPath();
+    ctx.arc(1*u, 8*v, u, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(9*u, 8*v, u, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  
+    // Legs with stride animation
+    const stride = this.isGrounded
+      ? Math.sin(frames * 0.25) * 1.5
+      : 1.5;
+  
+    ctx.fillStyle = '#2d3748';
+    ctx.fillRect((2 - stride)*u, 10*v, 2.5*u, 4*v);
+    ctx.fillRect((5.5 + stride)*u, 10*v, 2.5*u, 4*v);
+  
+    // Boots
+    ctx.fillStyle = '#1a202c';
+    ctx.fillRect((1.5 - stride)*u, 13*v, 3.5*u, 2*v);
+    ctx.fillRect((5 + stride)*u, 13*v, 3.5*u, 2*v);
+  
+    // Jet pack glow when gravity OFF
+    if (!(GAME_CONFIG as any).gravityEnabled) {
+      ctx.fillStyle = '#7c3aed';
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = '#7c3aed';
+      ctx.fillRect(3*u, 5*v, 1.5*u, 3*v);
+      ctx.fillRect(6*u, 5*v, 1.5*u, 3*v);
+      ctx.shadowBlur = 0;
+    }
 
     if (this.hasShield) {
       ctx.save();
