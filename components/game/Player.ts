@@ -148,15 +148,7 @@ export class Player {
             standingOnPlatform = true;
             floorY = ph.y;
          } else {
-            // We hit the side or bottom!
-            if (this.x + this.width > ph.x && prevX + this.width <= ph.x + speed) { // Hit front
-                this.x = ph.x - this.width;
-            } else if (this.x < ph.x + ph.width && prevX >= ph.x + ph.width - speed) { // Hit back (rare)
-                this.x = ph.x + ph.width;
-            } else if (this.y < ph.y + ph.height && prevY >= ph.y + ph.height) { // Hit bottom
-                this.y = ph.y + ph.height;
-                this.vy = 0;
-            }
+             // Platform is one-way! We can jump through from the bottom or sides unharmed.
          }
       }
     }

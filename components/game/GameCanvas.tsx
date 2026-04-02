@@ -227,16 +227,33 @@ export default function GameCanvas() {
     const canSpawnEntity = (canvas.width - lastEntityX > GAME_CONFIG.minObstacleGap);
     
     if (canSpawnEntity && Math.random() < GAME_CONFIG.obstacleSpawnChance) {
-        if (Math.random() < 0.35) { // 35% chance to spawn platforms
-             platformsRef.current.push(new Platform(canvas.width, canvas.height, eraId));
+        if (Math.random() < 0.40) { // 40% chance to spawn platforms
+             const plat = new Platform(canvas.width, canvas.height, eraId);
+             platformsRef.current.push(plat);
+             
+             // Spawn 3 coins precisely on top of the bridge
+             for(let i=0; i < 3; i++) {
+                let bit = new DataBit(canvas.width, canvas.height, eraId, g.frames);
+                bit.x = plat.x + (plat.width/2) + (i*40 - 40);
+                bit.y = plat.y - 35;
+                dataBitsRef.current.push(bit);
+             }
+
         } else {
-             obstaclesRef.current.push(new Obstacle(canvas, eraId, g.currentSpeed));
+             const obs = new Obstacle(canvas, eraId, g.currentSpeed);
+             obstaclesRef.current.push(obs);
+             
+             // Spawn a jumped arc of coins over the moving robot
+             for (let i=-1; i<=1; i++) {
+                let bit = new DataBit(canvas.width, canvas.height, eraId, g.frames);
+                bit.x = obs.x + (i * 45);
+                bit.y = obs.y - 65 - Math.cos(i) * 35; 
+                dataBitsRef.current.push(bit);
+             }
         }
     }
 
-    if (Math.random() < GAME_CONFIG.dataBitSpawnChance) {
-      dataBitsRef.current.push(new DataBit(canvas.width, canvas.height, eraId, g.frames));
-    }
+    // Power-ups spawn occasionally independent of structure
     if (Math.random() < GAME_CONFIG.powerUpSpawnChance && !p.hasShield && shieldsRef.current.length === 0) {
       shieldsRef.current.push(new ShieldPowerUp(canvas.width, canvas.height, g.frames));
     }
