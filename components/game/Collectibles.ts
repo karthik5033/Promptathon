@@ -342,3 +342,118 @@ export class FlyingShield {
     };
   }
 }
+
+/** Mushroom — gives 'Super' state (size increase + invincibility) */
+export class Mushroom {
+  x: number;
+  y: number;
+  width: number = 32;
+  height: number = 32;
+  markedForDeletion: boolean = false;
+  collected: boolean = false;
+  vx: number = -1; // moves slightly relative to screen
+  spawnFrame: number;
+
+  constructor(x: number, y: number, frame: number) {
+    this.x = x;
+    this.y = y;
+    this.spawnFrame = frame;
+  }
+
+  update(currentSpeed: number, frames: number) {
+    this.x -= (currentSpeed + this.vx);
+    if (this.x + this.width < -50) this.markedForDeletion = true;
+  }
+
+  draw(ctx: CanvasRenderingContext2D, frames: number) {
+    if (this.collected) return;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+
+    // Cap (Red with white dots)
+    ctx.fillStyle = '#e52521';
+    ctx.beginPath();
+    ctx.arc(16, 12, 16, Math.PI, 0);
+    ctx.fill();
+
+    // White dots
+    ctx.fillStyle = 'white';
+    ctx.beginPath(); ctx.arc(10, 6, 3, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(22, 6, 3, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(16, 2, 2, 0, Math.PI*2); ctx.fill();
+
+    // Stem
+    ctx.fillStyle = '#fffabc';
+    ctx.fillRect(8, 12, 16, 12);
+    
+    // Eyes
+    ctx.fillStyle = '#000';
+    ctx.fillRect(11, 14, 2, 4);
+    ctx.fillRect(19, 14, 2, 4);
+
+    ctx.restore();
+  }
+
+  getHitbox() {
+    return { x: this.x, y: this.y, width: this.width, height: this.height };
+  }
+}
+
+/** Mystery Box — gives score + 50% chance to spawn a Mushroom */
+export class MysteryBox {
+  x: number;
+  y: number;
+  width: number = 36;
+  height: number = 36;
+  markedForDeletion: boolean = false;
+  collected: boolean = false;
+  spawnFrame: number;
+
+  constructor(canvasWidth: number, canvasHeight: number, frame: number) {
+    this.x = canvasWidth + 50;
+    const groundY = canvasHeight - (canvasHeight * GAME_CONFIG.groundHeightRatio);
+    this.y = groundY - 120 - Math.random() * 40;
+    this.spawnFrame = frame;
+  }
+
+  update(currentSpeed: number, frames: number) {
+    this.x -= currentSpeed;
+    if (this.x + this.width < -50) this.markedForDeletion = true;
+  }
+
+  draw(ctx: CanvasRenderingContext2D, frames: number) {
+    if (this.collected) return;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+
+    // Box body (Golden Yellow)
+    const color = (frames % 40 < 20) ? '#f9ca24' : '#f0932b';
+    ctx.fillStyle = color;
+    ctx.fillRect(2, 2, 32, 32);
+    
+    // Border
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(2, 2, 32, 32);
+
+    // Question mark
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 24px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('?', 18, 18);
+
+    // Corner rivets
+    ctx.fillStyle = '#333';
+    ctx.fillRect(4, 4, 3, 3);
+    ctx.fillRect(29, 4, 3, 3);
+    ctx.fillRect(4, 29, 3, 3);
+    ctx.fillRect(29, 29, 3, 3);
+
+    ctx.restore();
+  }
+
+  getHitbox() {
+    return { x: this.x, y: this.y, width: this.width, height: this.height };
+  }
+}

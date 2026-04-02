@@ -15,7 +15,7 @@ import { HUD } from './HUD';
 import { GAME_CONFIG, ERAS, EraConfig } from '@/lib/gameConfig';
 import { saveToLeaderboard } from '@/lib/leaderboard';
 import { IEEECoin } from './IEEECoin';
-import { DataBit, ShieldPowerUp, FlyingShield, ScoreMultiplierPerk } from './Collectibles';
+import { DataBit, ShieldPowerUp, FlyingShield, ScoreMultiplierPerk, Mushroom, MysteryBox } from './Collectibles';
 import { applyDifficultySettings } from '@/lib/adaptiveDifficulty';
 import { classifySkill, getStoredSkill, storeSkill, PlayerStats } from '@/lib/skillDetection';
 import { HintOverlay, HintUrgency } from './HintOverlay';
@@ -123,6 +123,8 @@ export default function GameCanvas() {
   const shieldsRef = useRef<ShieldPowerUp[]>([]);
   const flyingShieldsRef = useRef<FlyingShield[]>([]);
   const scoreMultipliersRef = useRef<ScoreMultiplierPerk[]>([]);
+  const mushroomsRef = useRef<Mushroom[]>([]);
+  const mysteryBoxesRef = useRef<MysteryBox[]>([]);
   const eraManagerRef = useRef<EraManager | null>(null);
   const coinRef = useRef<IEEECoin | null>(null);
   
@@ -238,6 +240,8 @@ export default function GameCanvas() {
     shieldsRef.current = [];
     flyingShieldsRef.current = [];
     scoreMultipliersRef.current = [];
+    mushroomsRef.current = [];
+    mysteryBoxesRef.current = [];
     eraManagerRef.current = new EraManager();
     coinRef.current = null;
     lastObstacleXRef.current = canvas.width;
@@ -376,6 +380,12 @@ export default function GameCanvas() {
       shieldsRef.current.push(new ShieldPowerUp(canvas.width, canvas.height, g.frames));
     }
 
+    // Mystery Box — mostly in Era 3 but everywhere now
+    const boxChance = eraId === 3 ? 0.20 : 0.08;
+    if (g.frames % 500 === 0 && Math.random() < boxChance) {
+       mysteryBoxesRef.current.push(new MysteryBox(canvas.width, canvas.height, g.frames));
+    }
+
     obstaclesRef.current.forEach(obs => obs.update(g.currentSpeed));
     obstaclesRef.current = obstaclesRef.current.filter(obs => !obs.isOffScreen);
 
@@ -401,6 +411,12 @@ export default function GameCanvas() {
 
     scoreMultipliersRef.current.forEach(m => m.update(g.currentSpeed, g.frames));
     scoreMultipliersRef.current = scoreMultipliersRef.current.filter(m => !m.markedForDeletion && !m.collected);
+
+    mysteryBoxesRef.current.forEach(b => b.update(g.currentSpeed, g.frames));
+    mysteryBoxesRef.current = mysteryBoxesRef.current.filter(b => !b.markedForDeletion && !b.collected);
+
+    mushroomsRef.current.forEach(m => m.update(g.currentSpeed, g.frames));
+    mushroomsRef.current = mushroomsRef.current.filter(m => !m.markedForDeletion && !m.collected);
 
     if (Math.floor(g.score) === GAME_CONFIG.ieeeScore && !coinRef.current && !showIEEEBanner) {
         coinRef.current = new IEEECoin(canvas.width, canvas.height);
@@ -431,10 +447,10 @@ export default function GameCanvas() {
 
     // Obstacles
     const pBox = {
-      x: px + 2,    // tightening hitboxes (less padding = more realistic collisions)
-      y: py + 2,
-      width: pw - 4,
-      height: ph - 4
+      x: px, 
+      y: py,
+      width: pw,
+      height: ph
     };
 
     for (const obs of obstaclesRef.current) {
@@ -496,9 +512,35 @@ export default function GameCanvas() {
       const b = perk.getHitbox();
       if (px < b.x + b.width && px + pw > b.x && py < b.y + b.height && py + ph > b.y) {
           perk.collected = true;
-          g.score += 500; // instant bonus for picking it up
-          // Boost future bit values temporarily? No, let's keep it score simple for now or double score decay
+          g.score += 500; 
           createExplosion(b.x + b.width/2, b.y + b.height/2, '#ffd700');
+      }
+    }
+
+    // Mystery Boxes
+    for (const box of mysteryBoxesRef.current) {
+      if (box.collected) continue;
+      const b = box.getHitbox();
+      if (px < b.x + b.width && px + pw > b.x && py < b.y + b.height && py + ph > b.y) {
+          box.collected = true;
+          g.score += 100;
+          createExplosion(b.x + b.width/2, b.y + b.height/2, '#f9ca24');
+          // 50% chance to drop a Mushroom
+          if (Math.random() < 0.5) {
+             mushroomsRef.current.push(new Mushroom(box.x, box.y - 20, g.frames));
+          }
+      }
+    }
+
+    // Mushrooms
+    for (const mush of mushroomsRef.current) {
+      if (mush.collected) continue;
+      const m = mush.getHitbox();
+      if (px < m.x + m.width && px + pw > m.x && py < m.y + m.height && py + ph > m.y) {
+          mush.collected = true;
+          if (p.isSuper) g.score += 500; // already super? score bonus!
+          p.becomeSuper();
+          createExplosion(m.x + m.width/2, m.y + m.height/2, '#e52521');
       }
     }
 
@@ -544,6 +586,8 @@ export default function GameCanvas() {
     shieldsRef.current.forEach(shield => shield.draw(ctx, g.frames));
     flyingShieldsRef.current.forEach(f => f.draw(ctx, g.frames));
     scoreMultipliersRef.current.forEach(m => m.draw(ctx, g.frames));
+    mysteryBoxesRef.current.forEach(b => b.draw(ctx, g.frames));
+    mushroomsRef.current.forEach(m => m.draw(ctx, g.frames));
 
     const groundY = canvas.height - (canvas.height * GAME_CONFIG.groundHeightRatio);
     let groundGrad = ctx.createLinearGradient(0, groundY, 0, canvas.height);

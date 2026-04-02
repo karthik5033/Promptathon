@@ -32,6 +32,11 @@ export class Player {
   isInvincible: boolean = false;
   invincibleTimer: number = 0;
 
+  isSuper: boolean = false;
+  superTimer: number = 0;
+  baseWidth: number = 36;
+  baseHeight: number = 40;
+
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.x = 120;
@@ -48,7 +53,7 @@ export class Player {
   }
 
   hitObstacle(): boolean {
-    if (this.isInvincible) return false;
+    if (this.isInvincible || this.isSuper) return false;
     if (this.hasShield) {
       this.hasShield = false;
       this.shieldTimer = 0;
@@ -57,6 +62,15 @@ export class Player {
       return false; 
     }
     return true; 
+  }
+
+  becomeSuper() {
+    this.isSuper = true;
+    this.superTimer = 400; // ~6.6 seconds at 60fps
+    this.width = this.baseWidth * 1.5;
+    this.height = this.baseHeight * 1.5;
+    // Push up slightly so we don't fall through ground
+    this.y -= (this.baseHeight * 0.5);
   }
 
   predictJumpPath(obstacles: any[], speed: number): HintResult {
@@ -137,6 +151,21 @@ export class Player {
       } else {
         this.vy = 0;
       }
+    }
+
+    // Super state decay
+    if (this.isSuper) {
+      this.superTimer--;
+      if (this.superTimer <= 0) {
+        this.isSuper = false;
+        this.width = this.baseWidth;
+        this.height = this.baseHeight;
+      }
+    }
+
+    if (this.isInvincible) {
+      this.invincibleTimer--;
+      if (this.invincibleTimer <= 0) this.isInvincible = false;
     }
 
     this.y += this.vy;

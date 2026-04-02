@@ -16,6 +16,8 @@ const OBSTACLE_SIZES = {
   // ERA 5
   neural_node:   { width: 40, height: 40, floating: true,  floatY: 0.45 },
   glitch_stream: { width: 80, height: 30, floating: false },
+  // GROUND ENEMY — Mushroom mob (all eras)
+  mushroom_mob:  { width: 36, height: 40, floating: false },
   // FLYING OBSTACLES (sky-only, all eras)
   satellite:     { width: 45, height: 35, floating: true, floatY: 0 },
   drone:         { width: 40, height: 30, floating: true, floatY: 0 },
@@ -41,7 +43,7 @@ export class Obstacle {
   type: keyof typeof OBSTACLE_SIZES;
   passed: boolean = false;
   scored: boolean = false;
-  hitboxPadding: number = 4;
+  hitboxPadding: number = 0;
   markedForDeletion: boolean = false;
   isSkyObstacle: boolean = false;
 
@@ -54,11 +56,11 @@ export class Obstacle {
       this.isSkyObstacle = true;
     } else {
       let possibleTypes: (keyof typeof OBSTACLE_SIZES)[] = [];
-      if (eraId === 1) possibleTypes = ['vacuum_tube', 'punchcard'];
-      else if (eraId === 2) possibleTypes = ['reel_tape', 'mainframe'];
-      else if (eraId === 3) possibleTypes = ['floppy', 'crt_monitor'];
-      else if (eraId === 4) possibleTypes = ['browser', 'server_rack'];
-      else if (eraId >= 5) possibleTypes = ['neural_node', 'glitch_stream'];
+      if (eraId === 1) possibleTypes = ['vacuum_tube', 'punchcard', 'mushroom_mob'];
+      else if (eraId === 2) possibleTypes = ['reel_tape', 'mainframe', 'mushroom_mob'];
+      else if (eraId === 3) possibleTypes = ['floppy', 'crt_monitor', 'mushroom_mob'];
+      else if (eraId === 4) possibleTypes = ['browser', 'server_rack', 'mushroom_mob'];
+      else if (eraId >= 5) possibleTypes = ['neural_node', 'glitch_stream', 'mushroom_mob'];
       else possibleTypes = ['vacuum_tube'];
       this.type = possibleTypes[Math.floor(Math.random() * possibleTypes.length)];
     }
@@ -305,6 +307,40 @@ export class Obstacle {
         ctx.shadowBlur = 0;
         ctx.restore();
         break;
+      case 'mushroom_mob': {
+        const mx = this.x;
+        const my = this.y;
+        const mw = this.width;
+        const mh = this.height;
+        // Angry cap — dark red
+        ctx.fillStyle = '#8b0000';
+        ctx.beginPath();
+        ctx.arc(mx + mw / 2, my + 16, 18, Math.PI, 0);
+        ctx.fill();
+        // White spots on cap
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.beginPath(); ctx.arc(mx + 10, my + 9, 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(mx + 26, my + 9, 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(mx + 18, my + 4, 2.5, 0, Math.PI * 2); ctx.fill();
+        // Stem
+        ctx.fillStyle = '#d4b483';
+        ctx.fillRect(mx + 6, my + 16, mw - 12, mh - 16);
+        // Angry eyes
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(mx + 9,  my + 19, 5, 5);
+        ctx.fillRect(mx + 22, my + 19, 5, 5);
+        // Angry eyebrows (slanted)
+        ctx.strokeStyle = '#1a1a1a';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(mx + 8,  my + 17); ctx.lineTo(mx + 14, my + 20); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(mx + 28, my + 17); ctx.lineTo(mx + 22, my + 20); ctx.stroke();
+        // Frown
+        ctx.beginPath();
+        ctx.arc(mx + mw / 2, my + 34, 5, 0, Math.PI);
+        ctx.stroke();
+        break;
+      }
+
       case 'ai_drone':
         ctx.save();
         ctx.translate(this.x + this.width/2, this.y + this.height/2);
