@@ -164,3 +164,181 @@ export class ShieldPowerUp {
     };
   }
 }
+
+/** 2X Score Multiplier — golden spinning star that spawns at random sky heights */
+export class ScoreMultiplierPerk {
+  x: number;
+  y: number;
+  width: number = 32;
+  height: number = 32;
+  markedForDeletion: boolean = false;
+  collected: boolean = false;
+  spawnFrame: number;
+  floatOffset: number = 0;
+  rotation: number = 0;
+
+  constructor(canvasWidth: number, canvasHeight: number, frame: number) {
+    this.x = canvasWidth + 80;
+    this.y = 40 + Math.random() * (canvasHeight * 0.55);
+    this.spawnFrame = frame;
+  }
+
+  update(currentSpeed: number, frames: number) {
+    this.x -= currentSpeed;
+    this.floatOffset = Math.sin(frames * 0.05 + this.spawnFrame) * 10;
+    this.rotation += 0.04;
+    if (this.x + this.width < -20) {
+      this.markedForDeletion = true;
+    }
+  }
+
+  draw(ctx: CanvasRenderingContext2D, frames: number) {
+    if (this.collected) return;
+    ctx.save();
+    ctx.translate(this.x + this.width / 2, this.y + this.floatOffset + this.height / 2);
+    ctx.rotate(this.rotation);
+
+    const pulse = 0.8 + Math.sin(frames * 0.12) * 0.2;
+
+    ctx.shadowColor = '#ffd700';
+    ctx.shadowBlur = 18 * pulse;
+
+    // 5-point star
+    ctx.fillStyle = '#ffd700';
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+      const outerAngle = (Math.PI * 2 / 5) * i - Math.PI / 2;
+      const innerAngle = outerAngle + Math.PI / 5;
+      const outerR = 14;
+      const innerR = 6;
+      if (i === 0) ctx.moveTo(Math.cos(outerAngle) * outerR, Math.sin(outerAngle) * outerR);
+      else ctx.lineTo(Math.cos(outerAngle) * outerR, Math.sin(outerAngle) * outerR);
+      ctx.lineTo(Math.cos(innerAngle) * innerR, Math.sin(innerAngle) * innerR);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // Inner highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.beginPath();
+    ctx.arc(0, 0, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // "2X" text
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#1a1a1a';
+    ctx.font = 'bold 7px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('2X', 0, 0);
+
+    // Orbiting ring
+    ctx.strokeStyle = `rgba(255, 215, 0, ${0.3 + pulse * 0.3})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, 18, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  getHitbox() {
+    return {
+      x: this.x - 4,
+      y: this.y + this.floatOffset - 4,
+      width: this.width + 8,
+      height: this.height + 8,
+    };
+  }
+}
+
+/** Flying Shield — hexagonal sky shield with orbiting particles */
+export class FlyingShield {
+  x: number;
+  y: number;
+  width: number = 30;
+  height: number = 30;
+  markedForDeletion: boolean = false;
+  collected: boolean = false;
+  spawnFrame: number;
+  floatOffset: number = 0;
+
+  constructor(canvasWidth: number, canvasHeight: number, frame: number) {
+    this.x = canvasWidth + 120;
+    this.y = 50 + Math.random() * (canvasHeight * 0.50);
+    this.spawnFrame = frame;
+  }
+
+  update(currentSpeed: number, frames: number) {
+    this.x -= currentSpeed;
+    this.floatOffset = Math.cos(frames * 0.04 + this.spawnFrame) * 12;
+    if (this.x + this.width < -20) {
+      this.markedForDeletion = true;
+    }
+  }
+
+  draw(ctx: CanvasRenderingContext2D, frames: number) {
+    if (this.collected) return;
+    ctx.save();
+    ctx.translate(this.x + this.width / 2, this.y + this.floatOffset + this.height / 2);
+
+    const pulse = 0.7 + Math.sin(frames * 0.1) * 0.3;
+
+    ctx.shadowColor = '#00e5ff';
+    ctx.shadowBlur = 16 * pulse;
+
+    // Hexagon shape
+    ctx.fillStyle = `rgba(0, 229, 255, ${0.5 + pulse * 0.3})`;
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const angle = (Math.PI * 2 / 6) * i - Math.PI / 6;
+      const r = 14;
+      if (i === 0) ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+      else ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // Inner hexagon
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const angle = (Math.PI * 2 / 6) * i - Math.PI / 6;
+      const r = 8;
+      if (i === 0) ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+      else ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // Shield icon
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('S', 0, 0);
+
+    // Orbiting dots
+    for (let i = 0; i < 3; i++) {
+      const orbitAngle = frames * 0.06 + (Math.PI * 2 / 3) * i;
+      const ox = Math.cos(orbitAngle) * 19;
+      const oy = Math.sin(orbitAngle) * 19;
+      ctx.fillStyle = `rgba(0, 229, 255, ${0.6 + pulse * 0.3})`;
+      ctx.beginPath();
+      ctx.arc(ox, oy, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  getHitbox() {
+    return {
+      x: this.x - 4,
+      y: this.y + this.floatOffset - 4,
+      width: this.width + 8,
+      height: this.height + 8,
+    };
+  }
+}

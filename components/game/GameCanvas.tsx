@@ -15,7 +15,7 @@ import { HUD } from './HUD';
 import { GAME_CONFIG, ERAS, EraConfig } from '@/lib/gameConfig';
 import { saveToLeaderboard } from '@/lib/leaderboard';
 import { IEEECoin } from './IEEECoin';
-import { DataBit, ShieldPowerUp } from './Collectibles';
+import { DataBit, ShieldPowerUp, ScoreMultiplierPerk, FlyingShield } from './Collectibles';
 import { applyDifficultySettings } from '@/lib/adaptiveDifficulty';
 import { classifySkill, getStoredSkill, storeSkill, PlayerStats } from '@/lib/skillDetection';
 import { HintOverlay, HintUrgency } from './HintOverlay';
@@ -87,7 +87,9 @@ export default function GameCanvas() {
     frames: 0,
     combo: 0,
     comboMultiplier: 1,
-    lastComboTime: 0
+    lastComboTime: 0,
+    scoreMultiplierActive: false,
+    scoreMultiplierTimer: 0
   });
 
   const playerRef = useRef<Player | null>(null);
@@ -98,6 +100,8 @@ export default function GameCanvas() {
   const platformsRef = useRef<Platform[]>([]);
   const dataBitsRef = useRef<DataBit[]>([]);
   const shieldsRef = useRef<ShieldPowerUp[]>([]);
+  const flyingShieldsRef = useRef<FlyingShield[]>([]);
+  const scoreMultipliersRef = useRef<ScoreMultiplierPerk[]>([]);
   const eraManagerRef = useRef<EraManager | null>(null);
   const coinRef = useRef<IEEECoin | null>(null);
   
@@ -168,7 +172,9 @@ export default function GameCanvas() {
         frames: 0,
         combo: 0,
         comboMultiplier: 1,
-        lastComboTime: 0
+        lastComboTime: 0,
+        scoreMultiplierActive: false,
+        scoreMultiplierTimer: 0
     };
 
     playerRef.current = new Player(canvas);
@@ -179,6 +185,8 @@ export default function GameCanvas() {
     platformsRef.current = [];
     dataBitsRef.current = [];
     shieldsRef.current = [];
+    flyingShieldsRef.current = [];
+    scoreMultipliersRef.current = [];
     eraManagerRef.current = new EraManager();
     coinRef.current = null;
     lastObstacleXRef.current = canvas.width;
@@ -308,6 +316,34 @@ export default function GameCanvas() {
     shieldsRef.current.forEach(shield => shield.update(g.currentSpeed, g.frames));
     shieldsRef.current = shieldsRef.current.filter(shield => !shield.markedForDeletion && !shield.collected);
 
+    // Flying obstacles — spawn every ~350 frames
+    if (g.frames % 350 === 0 && g.frames > 200) {
+       const skyObs = new Obstacle(canvas, eraId, true);
+       obstaclesRef.current.push(skyObs);
+    }
+
+    // Flying Shield perks — rare sky spawns
+    if (g.frames % 600 === 0 && !p.hasShield && flyingShieldsRef.current.length === 0) {
+       flyingShieldsRef.current.push(new FlyingShield(canvas.width, canvas.height, g.frames));
+    }
+    flyingShieldsRef.current.forEach(fs => fs.update(g.currentSpeed, g.frames));
+    flyingShieldsRef.current = flyingShieldsRef.current.filter(fs => !fs.markedForDeletion && !fs.collected);
+
+    // 2X Score Multiplier perks — spawn every ~800 frames
+    if (g.frames % 800 === 0 && g.frames > 100 && scoreMultipliersRef.current.length === 0) {
+       scoreMultipliersRef.current.push(new ScoreMultiplierPerk(canvas.width, canvas.height, g.frames));
+    }
+    scoreMultipliersRef.current.forEach(sm => sm.update(g.currentSpeed, g.frames));
+    scoreMultipliersRef.current = scoreMultipliersRef.current.filter(sm => !sm.markedForDeletion && !sm.collected);
+
+    // 2X timer countdown
+    if (g.scoreMultiplierActive) {
+      g.scoreMultiplierTimer--;
+      if (g.scoreMultiplierTimer <= 0) {
+        g.scoreMultiplierActive = false;
+      }
+    }
+
     if (Math.floor(g.score) === GAME_CONFIG.ieeeScore && !coinRef.current && !showIEEEBanner) {
         coinRef.current = new IEEECoin(canvas.width, canvas.height);
     }
@@ -371,7 +407,7 @@ export default function GameCanvas() {
           g.combo++;
           g.comboMultiplier = Math.min(1 + Math.floor(g.combo / 5), GAME_CONFIG.maxComboMultiplier);
           g.lastComboTime = g.frames;
-          g.score += (GAME_CONFIG.dataBitValue * g.comboMultiplier);
+          g.score += (GAME_CONFIG.dataBitValue * g.comboMultiplier * (g.scoreMultiplierActive ? 2 : 1));
           createExplosion(b.x + b.width/2, b.y + b.height/2, ERAS[bit.eraId - 1].collectibleColor);
       }
     }
@@ -384,6 +420,29 @@ export default function GameCanvas() {
           shield.collected = true;
           p.activateShield();
           createExplosion(s.x + s.width/2, s.y + s.height/2, '#3498db');
+      }
+    }
+
+    // Flying Shields
+    for (const fs of flyingShieldsRef.current) {
+      if (fs.collected) continue;
+      const s = fs.getHitbox();
+      if (px < s.x + s.width && px + pw > s.x && py < s.y + s.height && py + ph > s.y) {
+          fs.collected = true;
+          p.activateShield();
+          createExplosion(s.x + s.width/2, s.y + s.height/2, '#00e5ff');
+      }
+    }
+
+    // 2X Score Multiplier
+    for (const sm of scoreMultipliersRef.current) {
+      if (sm.collected) continue;
+      const s = sm.getHitbox();
+      if (px < s.x + s.width && px + pw > s.x && py < s.y + s.height && py + ph > s.y) {
+          sm.collected = true;
+          g.scoreMultiplierActive = true;
+          g.scoreMultiplierTimer = 600; // ~10 seconds
+          createExplosion(s.x + s.width/2, s.y + s.height/2, '#ffd700');
       }
     }
 
@@ -503,7 +562,7 @@ export default function GameCanvas() {
           g.comboMultiplier = 1;
       }
 
-      g.score += (0.1 * g.comboMultiplier);
+      g.score += (0.1 * g.comboMultiplier * (g.scoreMultiplierActive ? 2 : 1));
       statsRef.current.totalFramesAlive++;
 
       if (eraManagerRef.current) {
@@ -577,6 +636,8 @@ export default function GameCanvas() {
       platformsRef.current.forEach(plat => plat.draw(ctx));
       dataBitsRef.current.forEach(b => b.draw(ctx, g.frames));
       shieldsRef.current.forEach(s => s.draw(ctx, g.frames));
+      flyingShieldsRef.current.forEach(fs => fs.draw(ctx, g.frames));
+      scoreMultipliersRef.current.forEach(sm => sm.draw(ctx, g.frames));
       obstaclesRef.current.forEach(obs => obs.draw(ctx));
       particlesRef.current.forEach(p => p.draw(ctx));
       
@@ -592,6 +653,42 @@ export default function GameCanvas() {
              const rect = canvas.getBoundingClientRect();
              setPlayerCanvasPos({ x: playerRef.current.x + rect.left + playerRef.current.width/2, y: playerRef.current.y + rect.top });
           }
+      }
+
+      // 2X Score Multiplier HUD on canvas
+      if (g.scoreMultiplierActive) {
+        ctx.save();
+        const barX = canvas.width / 2 - 80;
+        const barY = 60;
+        const barW = 160;
+        const barH = 8;
+        const pct = g.scoreMultiplierTimer / 600;
+
+        // Glowing "2X SCORE" text
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#ffd700';
+        ctx.fillStyle = '#ffd700';
+        ctx.font = 'bold 22px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('⭐ 2X SCORE ⭐', canvas.width / 2, barY - 8);
+
+        // Timer bar background
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(barX, barY, barW, barH);
+
+        // Timer bar fill
+        const grad = ctx.createLinearGradient(barX, barY, barX + barW * pct, barY);
+        grad.addColorStop(0, '#ffd700');
+        grad.addColorStop(1, '#ff8c00');
+        ctx.fillStyle = grad;
+        ctx.fillRect(barX, barY, barW * pct, barH);
+
+        // Border
+        ctx.strokeStyle = 'rgba(255, 215, 0, 0.6)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(barX, barY, barW, barH);
+        ctx.restore();
       }
 
       if (prevGravityRef.current !== (GAME_CONFIG as any).gravityEnabled) {
