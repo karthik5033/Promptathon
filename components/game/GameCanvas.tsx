@@ -9,6 +9,7 @@ import { Particle } from './ParticleSystem';
 import { Cloud } from './Cloud';
 import { Obstacle } from './Obstacle';
 import { Platform } from './Platform';
+import { BackgroundSystem } from './BackgroundSystem';
 import { EraManager } from './EraManager';
 import { HUD } from './HUD';
 import { GAME_CONFIG, ERAS, EraConfig } from '@/lib/gameConfig';
@@ -75,6 +76,7 @@ export default function GameCanvas() {
   const playerRef = useRef<Player | null>(null);
   const particlesRef = useRef<Particle[]>([]);
   const cloudsRef = useRef<Cloud[]>([]);
+  const bgSystemRef = useRef<BackgroundSystem | null>(null);
   const obstaclesRef = useRef<Obstacle[]>([]);
   const platformsRef = useRef<Platform[]>([]);
   const dataBitsRef = useRef<DataBit[]>([]);
@@ -109,6 +111,7 @@ export default function GameCanvas() {
     playerRef.current = new Player(canvas);
     particlesRef.current = [];
     cloudsRef.current = [];
+    bgSystemRef.current = new BackgroundSystem(canvas.width, canvas.height);
     obstaclesRef.current = [];
     platformsRef.current = [];
     dataBitsRef.current = [];
@@ -311,11 +314,10 @@ export default function GameCanvas() {
     const g = gRef.current;
     if (!era) return;
 
-    let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    grad.addColorStop(0, era.bgTop); 
-    grad.addColorStop(1, era.bgBottom);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (bgSystemRef.current) {
+        bgSystemRef.current.draw(ctx, era.id, canvas.height);
+    }
+
 
     ctx.save();
     ctx.shadowBlur = 40;
@@ -414,6 +416,10 @@ export default function GameCanvas() {
       }
       
       g.currentSpeed = Math.min(g.currentSpeed + (GAME_CONFIG.speedIncrement * 0.1), GAME_CONFIG.maxSpeed);
+
+      if (bgSystemRef.current) {
+          bgSystemRef.current.update(g.currentSpeed, g.frames, canvas.width);
+      }
 
       updateHUD();
 
