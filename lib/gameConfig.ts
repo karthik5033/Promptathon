@@ -1,15 +1,15 @@
 export const GAME_CONFIG = {
   // Physics — tuned for higher jumping and better obstacle clearance
-  gravity: 0.45,
-  jumpForce: -12.5,
-  doubleJumpForce: -10.5,
-  baseSpeed: 2.8,
-  playerSpeed: 4.5,
+  gravity: 0.35,
+  jumpForce: -13.8,
+  doubleJumpForce: -11.8,
+  baseSpeed: 1.5,
+  playerSpeed: 4.8,
   groundHeightRatio: 0.18,
 
   // Difficulty curve — very gentle ramp
   speedIncrement: 0.0003,
-  maxSpeed: 7.5,
+  maxSpeed: 8.5,
   eraSpeedBoost: 0.3,   // small bump on era change
 
   // Obstacle spacing — generous gaps

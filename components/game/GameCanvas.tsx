@@ -84,6 +84,14 @@ export default function GameCanvas() {
   
   const [showIEEEBanner, setShowIEEEBanner] = useState(false);
   const [playerName, setPlayerName] = useState("");
+  const [speedMode, setSpeedMode] = useState<'AUTO' | 'CUSTOM'>('AUTO');
+  const [customSpeed, setCustomSpeed] = useState<number>(3.0);
+
+  const speedModeRef = useRef<'AUTO' | 'CUSTOM'>('AUTO');
+  const customSpeedRef = useRef<number>(3.0);
+
+  useEffect(() => { speedModeRef.current = speedMode; }, [speedMode]);
+  useEffect(() => { customSpeedRef.current = customSpeed; }, [customSpeed]);
 
   useEffect(() => {
     dispatch({ type: 'START' });
@@ -413,7 +421,11 @@ export default function GameCanvas() {
           return;
       }
       
-      g.currentSpeed = Math.min(g.currentSpeed + (GAME_CONFIG.speedIncrement * 0.1), GAME_CONFIG.maxSpeed);
+      if (speedModeRef.current === 'AUTO') {
+          g.currentSpeed = Math.min(g.currentSpeed + (GAME_CONFIG.speedIncrement * 0.1), GAME_CONFIG.maxSpeed);
+      } else {
+          g.currentSpeed = customSpeedRef.current;
+      }
 
       updateHUD();
 
@@ -469,7 +481,35 @@ export default function GameCanvas() {
     <div className="relative w-full h-full overflow-hidden bg-black font-sans selection:bg-purple-500/30">
       <canvas ref={canvasRef} className="block w-full h-full" />
       
-      {state.status === 'PLAYING' && state.eraRenderData && <HUD />}
+      {state.status === 'PLAYING' && state.eraRenderData && (
+        <>
+          <HUD />
+          <div className="absolute top-4 right-4 z-30 flex flex-col items-end gap-2 p-3 bg-black/60 backdrop-blur-md border border-white/20 rounded-xl shadow-lg">
+             <div className="flex bg-gray-800 rounded-lg overflow-hidden">
+                <button 
+                  onClick={() => setSpeedMode('AUTO')} 
+                  className={`px-3 py-1 font-bold text-xs uppercase ${speedMode === 'AUTO' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-gray-700'}`}
+                >Auto</button>
+                <button 
+                  onClick={() => setSpeedMode('CUSTOM')} 
+                  className={`px-3 py-1 font-bold text-xs uppercase ${speedMode === 'CUSTOM' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:bg-gray-700'}`}
+                >Custom</button>
+             </div>
+             {speedMode === 'CUSTOM' && (
+                <div className="flex flex-col items-end">
+                   <label className="text-white/60 text-[10px] uppercase font-bold mb-1">Set Speed: {customSpeed.toFixed(1)}x</label>
+                   <input 
+                     type="range" 
+                     min="1" max="10" step="0.5" 
+                     value={customSpeed} 
+                     onChange={(e) => setCustomSpeed(parseFloat(e.target.value))} 
+                     className="w-24 accent-purple-500 cursor-pointer"
+                   />
+                </div>
+             )}
+          </div>
+        </>
+      )}
 
       {state.eraRenderData && (
           <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl px-8 flex flex-col items-center justify-center transition-all duration-[2000ms] ease-out pointer-events-none drop-shadow-2xl ${state.bannerVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
