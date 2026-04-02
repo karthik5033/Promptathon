@@ -15,7 +15,7 @@ import { HUD } from './HUD';
 import { GAME_CONFIG, ERAS, EraConfig } from '@/lib/gameConfig';
 import { saveToLeaderboard } from '@/lib/leaderboard';
 import { IEEECoin } from './IEEECoin';
-import { DataBit, ShieldPowerUp } from './Collectibles';
+import { DataBit, ShieldPowerUp, FlyingShield, ScoreMultiplierPerk } from './Collectibles';
 import { applyDifficultySettings } from '@/lib/adaptiveDifficulty';
 import { classifySkill, getStoredSkill, storeSkill, PlayerStats } from '@/lib/skillDetection';
 import { HintOverlay, HintUrgency } from './HintOverlay';
@@ -101,7 +101,7 @@ export default function GameCanvas() {
      setGravityToggleFade(false);
   };
   
-  const keys = useKeyboard(toggleGravityCallback);
+  const keys = useKeyboard();
   const router = useRouter();
 
   const gRef = useRef({
@@ -121,6 +121,8 @@ export default function GameCanvas() {
   const platformsRef = useRef<Platform[]>([]);
   const dataBitsRef = useRef<DataBit[]>([]);
   const shieldsRef = useRef<ShieldPowerUp[]>([]);
+  const flyingShieldsRef = useRef<FlyingShield[]>([]);
+  const scoreMultipliersRef = useRef<ScoreMultiplierPerk[]>([]);
   const eraManagerRef = useRef<EraManager | null>(null);
   const coinRef = useRef<IEEECoin | null>(null);
   
@@ -234,6 +236,8 @@ export default function GameCanvas() {
     platformsRef.current = [];
     dataBitsRef.current = [];
     shieldsRef.current = [];
+    flyingShieldsRef.current = [];
+    scoreMultipliersRef.current = [];
     eraManagerRef.current = new EraManager();
     coinRef.current = null;
     lastObstacleXRef.current = canvas.width;
@@ -321,36 +325,51 @@ export default function GameCanvas() {
     const eraId = eraManagerRef.current?.currentEra.id || 1;
 
     // Obstacle and Platform Spawning
-    const gap = GAME_CONFIG.minObstacleGap + Math.random() * 300;
+    // Obstacle and Platform Spawning — scaling gap with score
+    const scoreScalingGap = Math.max(250, GAME_CONFIG.minObstacleGap - (g.score / 50));
+    const gap = scoreScalingGap + Math.random() * 250;
     
     if (lastObstacleXRef.current < canvas.width - gap) {
-        if (Math.random() < 0.40) { // 40% chance to spawn platforms
+        if (Math.random() < 0.40) { 
              const plat = new Platform(canvas.width, canvas.height, eraId);
              platformsRef.current.push(plat);
              
-             // Spawn 3 coins precisely on top of the bridge
              for(let i=0; i < 3; i++) {
                 let bit = new DataBit(canvas.width, canvas.height, eraId, g.frames);
                 bit.x = plat.x + (plat.width/2) + (i*40 - 40);
                 bit.y = plat.y - 35;
                 dataBitsRef.current.push(bit);
              }
-
         } else {
-             const obs = new Obstacle(canvas, eraId);
+             // Sky obstacle chance scales with score: starting at 40% up to 80% in flying mode
+             const isFlying = !(GAME_CONFIG as any).gravityEnabled;
+             const difficultyMultiplier = Math.min(0.8, 0.4 + (g.score / 50000));
+             const isSky = isFlying && Math.random() < difficultyMultiplier;
+             const obs = new Obstacle(canvas, eraId, isSky);
              obstaclesRef.current.push(obs);
              
-             // Spawn a jumped arc of coins over the obstacle
-             for (let i=-1; i<=1; i++) {
-                let bit = new DataBit(canvas.width, canvas.height, eraId, g.frames);
-                bit.x = obs.x + obs.width/2 + (i * 45); 
-                bit.y = obs.y - 65 - Math.cos(i) * 35; 
-                dataBitsRef.current.push(bit);
+             if (!isSky) {
+               for (let i=-1; i<=1; i++) {
+                  let bit = new DataBit(canvas.width, canvas.height, eraId, g.frames);
+                  bit.x = obs.x + obs.width/2 + (i * 45); 
+                  bit.y = obs.y - 65 - Math.cos(i) * 35; 
+                  dataBitsRef.current.push(bit);
+               }
              }
         }
         lastObstacleXRef.current = canvas.width;
     }
     lastObstacleXRef.current -= g.currentSpeed;
+
+    // FLYING MODE (GRAVITY OFF) SPECIAL PERKS
+    if (!(GAME_CONFIG as any).gravityEnabled) {
+      if (g.frames % 400 === 0 && Math.random() < 0.2) {
+          flyingShieldsRef.current.push(new FlyingShield(canvas.width, canvas.height, g.frames));
+      }
+      if (g.frames % 300 === 0 && Math.random() < 0.25) {
+          scoreMultipliersRef.current.push(new ScoreMultiplierPerk(canvas.width, canvas.height, g.frames));
+      }
+    }
 
     // Power-ups spawn occasionally independent of structure
     if (Math.random() < GAME_CONFIG.powerUpSpawnChance && !p.hasShield && shieldsRef.current.length === 0) {
@@ -376,6 +395,12 @@ export default function GameCanvas() {
 
     shieldsRef.current.forEach(shield => shield.update(g.currentSpeed, g.frames));
     shieldsRef.current = shieldsRef.current.filter(shield => !shield.markedForDeletion && !shield.collected);
+
+    flyingShieldsRef.current.forEach(s => s.update(g.currentSpeed, g.frames));
+    flyingShieldsRef.current = flyingShieldsRef.current.filter(s => !s.markedForDeletion && !s.collected);
+
+    scoreMultipliersRef.current.forEach(m => m.update(g.currentSpeed, g.frames));
+    scoreMultipliersRef.current = scoreMultipliersRef.current.filter(m => !m.markedForDeletion && !m.collected);
 
     if (Math.floor(g.score) === GAME_CONFIG.ieeeScore && !coinRef.current && !showIEEEBanner) {
         coinRef.current = new IEEECoin(canvas.width, canvas.height);
@@ -406,9 +431,9 @@ export default function GameCanvas() {
 
     // Obstacles
     const pBox = {
-      x: px + 6,
-      y: py + 4,
-      width: pw - 12,
+      x: px + 2,    // tightening hitboxes (less padding = more realistic collisions)
+      y: py + 2,
+      width: pw - 4,
       height: ph - 4
     };
 
@@ -456,6 +481,27 @@ export default function GameCanvas() {
       }
     }
 
+    for (const fShield of flyingShieldsRef.current) {
+      if (fShield.collected) continue;
+      const fs = fShield.getHitbox();
+      if (px < fs.x + fs.width && px + pw > fs.x && py < fs.y + fs.height && py + ph > fs.y) {
+          fShield.collected = true;
+          p.activateShield();
+          createExplosion(fs.x + fs.width/2, fs.y + fs.height/2, '#00e5ff');
+      }
+    }
+
+    for (const perk of scoreMultipliersRef.current) {
+      if (perk.collected) continue;
+      const b = perk.getHitbox();
+      if (px < b.x + b.width && px + pw > b.x && py < b.y + b.height && py + ph > b.y) {
+          perk.collected = true;
+          g.score += 500; // instant bonus for picking it up
+          // Boost future bit values temporarily? No, let's keep it score simple for now or double score decay
+          createExplosion(b.x + b.width/2, b.y + b.height/2, '#ffd700');
+      }
+    }
+
     // IEEE Coin
     if (coinRef.current) {
       const ch = coinRef.current.getHitbox();
@@ -491,6 +537,13 @@ export default function GameCanvas() {
     ctx.restore();
 
     cloudsRef.current.forEach(c => c.draw(ctx));
+
+    obstaclesRef.current.forEach(obs => obs.draw(ctx));
+    platformsRef.current.forEach(plat => plat.draw(ctx));
+    dataBitsRef.current.forEach(bit => bit.draw(ctx, g.frames));
+    shieldsRef.current.forEach(shield => shield.draw(ctx, g.frames));
+    flyingShieldsRef.current.forEach(f => f.draw(ctx, g.frames));
+    scoreMultipliersRef.current.forEach(m => m.draw(ctx, g.frames));
 
     const groundY = canvas.height - (canvas.height * GAME_CONFIG.groundHeightRatio);
     let groundGrad = ctx.createLinearGradient(0, groundY, 0, canvas.height);

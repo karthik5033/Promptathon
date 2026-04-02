@@ -376,5 +376,6 @@ export class Player {
     ctx.restore();
   }
 
+
 }
 

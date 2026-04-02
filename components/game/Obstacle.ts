@@ -41,7 +41,7 @@ export class Obstacle {
   type: keyof typeof OBSTACLE_SIZES;
   passed: boolean = false;
   scored: boolean = false;
-  hitboxPadding: number = 8;
+  hitboxPadding: number = 4;
   markedForDeletion: boolean = false;
   isSkyObstacle: boolean = false;
 
