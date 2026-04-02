@@ -1,5 +1,6 @@
 import { GAME_CONFIG } from "@/lib/gameConfig";
 import { Particle } from "./ParticleSystem";
+import { Platform } from "./Platform";
 
 export class Player {
   width: number = 36;
@@ -10,25 +11,19 @@ export class Player {
   isGrounded: boolean = true;
   canvas: HTMLCanvasElement;
 
-  // Double jump
   canDoubleJump: boolean = false;
   hasDoubleJumped: boolean = false;
 
-  // Shield power-up
   hasShield: boolean = false;
   shieldTimer: number = 0;
-  shieldMaxTime: number = 300; // 5 seconds at 60fps
+  shieldMaxTime: number = 300;
 
-  // Invincibility flash after hit
   isInvincible: boolean = false;
   invincibleTimer: number = 0;
 
-  // Visual flair
-  trailTimer: number = 0;
-
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
-    this.x = Math.min(120, canvas.width * 0.12);
+    this.x = 120;
     this.y = canvas.height - (canvas.height * GAME_CONFIG.groundHeightRatio) - this.height;
   }
 
@@ -44,35 +39,79 @@ export class Player {
       this.shieldTimer = 0;
       this.isInvincible = true;
       this.invincibleTimer = 60;
-      return false; // Absorbed by shield
+      return false; 
     }
-    return true; // Real hit
+    return true; 
   }
 
-  update(keys: { [key: string]: boolean }, frames: number, particles: Particle[]) {
-    // Ducking logic
+  update(keys: { [key: string]: boolean }, frames: number, particles: Particle[], platforms: Platform[], speed: number) {
+    const prevY = this.y;
+    const prevX = this.x;
+
     const isDucking = keys.ArrowDown && this.isGrounded;
     const targetHeight = isDucking ? 20 : 40;
     const heightDiff = this.height - targetHeight;
     if (heightDiff !== 0) {
       this.height = targetHeight;
-      this.y += heightDiff; // Move y down when ducking, up when standing
+      this.y += heightDiff;
+    }
+
+    // Horizontal Movement
+    if (keys.ArrowLeft) {
+      this.x -= GAME_CONFIG.playerSpeed;
+    }
+    if (keys.ArrowRight) {
+      this.x += GAME_CONFIG.playerSpeed;
     }
 
     // Gravity
     this.vy += GAME_CONFIG.gravity;
     this.y += this.vy;
 
-    const groundY = this.canvas.height - (this.canvas.height * GAME_CONFIG.groundHeightRatio);
+    const absoluteGroundY = this.canvas.height - (this.canvas.height * GAME_CONFIG.groundHeightRatio);
+    let floorY = absoluteGroundY;
 
-    // Ground collision
-    if (this.y + this.height >= groundY) {
-      if (!this.isGrounded) {
-        // Landing particles
+    this.isGrounded = false;
+    let standingOnPlatform = false;
+
+    // Platform collisions
+    for (const plat of platforms) {
+      const ph = plat.getHitbox();
+      
+      // Horizontal intersection check
+      const horizontalMatch = this.x + this.width > ph.x && this.x < ph.x + ph.width;
+      const verticalMatch = this.y + this.height > ph.y && this.y < ph.y + ph.height;
+
+      if (horizontalMatch && verticalMatch) {
+         // Did we land on top?
+         const wasAbove = prevY + this.height <= ph.y + 0.1; // +0.1 for float precision
+         if (wasAbove && this.vy > 0) {
+            this.y = ph.y - this.height;
+            this.vy = 0;
+            this.isGrounded = true;
+            standingOnPlatform = true;
+            floorY = ph.y;
+         } else {
+            // We hit the side or bottom!
+            if (this.x + this.width > ph.x && prevX + this.width <= ph.x + speed) { // Hit front
+                this.x = ph.x - this.width;
+            } else if (this.x < ph.x + ph.width && prevX >= ph.x + ph.width - speed) { // Hit back (rare)
+                this.x = ph.x + ph.width;
+            } else if (this.y < ph.y + ph.height && prevY >= ph.y + ph.height) { // Hit bottom
+                this.y = ph.y + ph.height;
+                this.vy = 0;
+            }
+         }
+      }
+    }
+
+    // Absolute Ground collision fallback
+    if (this.y + this.height >= absoluteGroundY && !standingOnPlatform) {
+      if (!this.isGrounded && prevY + this.height < absoluteGroundY) {
         for (let i = 0; i < 10; i++) {
           particles.push(new Particle(
             this.x + this.width / 2 + (Math.random() * 24 - 12),
-            groundY,
+            absoluteGroundY,
             (Math.random() - 0.5) * 4,
             -Math.random() * 3 - 1,
             Math.random() * 4 + 2,
@@ -80,16 +119,17 @@ export class Player {
           ));
         }
       }
-      this.y = groundY - this.height;
+      this.y = absoluteGroundY - this.height;
       this.vy = 0;
       this.isGrounded = true;
-      this.hasDoubleJumped = false;
-      this.canDoubleJump = true;
-    } else {
-      this.isGrounded = false;
     }
 
-    // Jump
+    if (this.isGrounded) {
+       this.hasDoubleJumped = false;
+       this.canDoubleJump = true;
+    }
+
+    // Jump logic
     if ((keys.Space || keys.ArrowUp) && !isDucking) {
       if (this.isGrounded) {
         this.vy = GAME_CONFIG.jumpForce;
@@ -97,11 +137,10 @@ export class Player {
         this.canDoubleJump = true;
         this.hasDoubleJumped = false;
 
-        // Jump particles
         for (let i = 0; i < 8; i++) {
           particles.push(new Particle(
             this.x + this.width / 2 + (Math.random() * 16 - 8),
-            groundY,
+            floorY,
             -Math.random() * 2 - 1,
             -Math.random() * 2.5,
             Math.random() * 3 + 2,
@@ -113,7 +152,6 @@ export class Player {
         this.hasDoubleJumped = true;
         keys._jumpConsumed = true;
 
-        // Double jump sparkle particles
         for (let i = 0; i < 12; i++) {
           const angle = (Math.PI * 2 / 12) * i;
           particles.push(new Particle(
@@ -127,16 +165,15 @@ export class Player {
         }
       }
     }
-    // Reset jump consumed flag when key is released
     if (!keys.Space && !keys.ArrowUp) {
       keys._jumpConsumed = false;
     }
 
-    // Running dust particles
-    if (this.isGrounded && frames % 6 === 0) {
+    // Dust particles
+    if (this.isGrounded && frames % 6 === 0 && Array.isArray(particles)) {
       particles.push(new Particle(
         this.x + 8,
-        groundY,
+        floorY,
         -1.5 - Math.random() * 2,
         -Math.random() - 0.3,
         Math.random() * 2.5 + 1.5,
@@ -144,34 +181,23 @@ export class Player {
       ));
     }
 
-    // Left/Right movement
-    if (keys.ArrowLeft) {
-      this.x -= GAME_CONFIG.playerSpeed;
+    // Bounds limit logic (Freely roam horizontally within screen, but die if pushed out left)
+    if (this.x < -this.width) {
+       // Allow going out extremely left (handled in checkCollisions Game Over)
     }
-    if (keys.ArrowRight) {
-      this.x += GAME_CONFIG.playerSpeed;
-    }
-
-    // Bounds
-    if (this.x < 0) this.x = 0;
-    const playerLimitX = this.canvas.width / 2;
-    if (this.x + this.width > playerLimitX) {
-      this.x = playerLimitX - this.width;
+    if (this.x > this.canvas.width - this.width) {
+      this.x = this.canvas.width - this.width;
     }
 
-    // Shield decay
     if (this.hasShield) {
       this.shieldTimer--;
       if (this.shieldTimer <= 0) this.hasShield = false;
     }
-
-    // Invincibility decay
     if (this.isInvincible) {
       this.invincibleTimer--;
       if (this.invincibleTimer <= 0) this.isInvincible = false;
     }
 
-    // Trail particles when airborne
     if (!this.isGrounded && frames % 3 === 0) {
       particles.push(new Particle(
         this.x + this.width / 2 + (Math.random() * 6 - 3),
@@ -184,11 +210,10 @@ export class Player {
     }
   }
 
-  draw(ctx: CanvasRenderingContext2D, frames: number) {
+  draw(ctx: CanvasRenderingContext2D, frames: number, speed: number) {
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    // Invincibility flash
     if (this.isInvincible && frames % 4 < 2) {
       ctx.globalAlpha = 0.4;
     }
@@ -198,63 +223,48 @@ export class Player {
 
     const u = this.width / 12;
     const v = this.height / 16;
-
     const R = '#e52521';
     const BL = '#0043bb';
     const P = '#ffcca6';
     const BR = '#5c3a21';
     const Y = '#fdf104';
 
-    // Hat
     ctx.fillStyle = R;
     ctx.fillRect(3 * u, 0 * v, 5 * u, 2 * v);
     ctx.fillRect(2 * u, 2 * v, 9 * u, 1 * v);
-
-    // Head
     ctx.fillStyle = BR;
     ctx.fillRect(2 * u, 3 * v, 3 * u, 3 * v);
     ctx.fillRect(1 * u, 4 * v, 1 * u, 3 * v);
-
     ctx.fillStyle = P;
     ctx.fillRect(5 * u, 3 * v, 4 * u, 4 * v);
     ctx.fillRect(9 * u, 4 * v, 2 * u, 2 * v);
     ctx.fillRect(3 * u, 6 * v, 6 * u, 1 * v);
-
     ctx.fillStyle = BR;
     ctx.fillRect(7 * u, 3 * v, 1 * u, 2 * v);
     ctx.fillRect(7 * u, 5 * v, 4 * u, 1 * v);
-
-    // Body
     ctx.fillStyle = R;
     ctx.fillRect(2 * u, 7 * v, 3 * u, 4 * v);
     ctx.fillRect(7 * u, 7 * v, 3 * u, 4 * v);
     ctx.fillRect(4 * u, 7 * v, 4 * u, 2 * v);
-
     ctx.fillStyle = BL;
     ctx.fillRect(4 * u, 9 * v, 4 * u, 4 * v);
     ctx.fillRect(3 * u, 8 * v, 1 * u, 3 * v);
     ctx.fillRect(8 * u, 8 * v, 1 * u, 3 * v);
-
     ctx.fillStyle = Y;
     ctx.fillRect(3 * u, 10 * v, 1 * u, 1 * v);
     ctx.fillRect(8 * u, 10 * v, 1 * u, 1 * v);
-
-    // Hands
     ctx.fillStyle = P;
     ctx.fillRect(1 * u, 9 * v, 2 * u, 2 * v);
     ctx.fillRect(9 * u, 9 * v, 2 * u, 2 * v);
-
-    // Legs/Shoes — animate walk cycle
+    
     ctx.fillStyle = BR;
     const stride = this.isGrounded ? Math.sin(frames * 0.15) * 2 : 2;
     ctx.fillRect((3 - stride) * u, 13 * v, 3 * u, 2 * v);
     ctx.fillRect((6 + stride) * u, 13 * v, 3 * u, 2 * v);
 
-    // Shield visual
     if (this.hasShield) {
       ctx.save();
       const shimmer = 0.3 + Math.sin(frames * 0.1) * 0.15;
-      // Pulsing shield opacity
       const pulseAlpha = this.shieldTimer < 60 ? (Math.sin(frames * 0.3) * 0.3 + 0.3) : shimmer;
       ctx.strokeStyle = `rgba(52, 152, 219, ${pulseAlpha + 0.3})`;
       ctx.lineWidth = 2;
@@ -266,7 +276,6 @@ export class Player {
       ctx.restore();
     }
 
-    // Double jump indicator — small wing-like sparkles
     if (!this.isGrounded && !this.hasDoubleJumped && this.canDoubleJump) {
       ctx.save();
       ctx.fillStyle = `rgba(255, 255, 100, ${0.4 + Math.sin(frames * 0.2) * 0.2})`;
